@@ -2,6 +2,7 @@ import { useState } from 'react'
 import styles from './Layout.module.css'
 import logoImg from '../../assets/logo.jpg'
 import GestionUsuarios from './GestionUsuarios'
+import GestionTickets from './GestionTickets'
 
 /* ── Icons ── */
 const UsersIcon = () => (
@@ -99,11 +100,7 @@ export default function DashboardLayout({ session, onLogout }) {
       {/* ── MAIN CONTENT ── */}
       <main className={styles.main}>
         {activeNav === 'usuarios' && <GestionUsuarios />}
-        {activeNav === 'tickets' && (
-          <div className={styles.placeholder}>
-            <p>Módulo de tickets — próximamente</p>
-          </div>
-        )}
+        {activeNav === 'tickets' && <GestionTickets session={session} />}
       </main>
     </div>
   )
