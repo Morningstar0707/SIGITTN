@@ -38,8 +38,8 @@ const INITIAL_MESSAGES = [
   { id: 3, type: 'received', kind: 'text',  text: 'Ok', time: '10:00 a.m.' },
 ]
 
-export default function ModalNovedades({ ticket, onClose }) {
-  const [estado,   setEstado]   = useState('')
+export default function ModalNovedades({ ticket, onClose, onUpdateStatus }) {
+  const [estado,   setEstado]   = useState(ticket.status || '')
   const [messages, setMessages] = useState(INITIAL_MESSAGES)
   const [inputVal, setInputVal] = useState('')
   const bottomRef  = useRef(null)
@@ -48,6 +48,13 @@ export default function ModalNovedades({ ticket, onClose }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  const handleActualizar = () => {
+    if (estado && onUpdateStatus) {
+      onUpdateStatus(ticket.id, estado)
+    }
+    onClose()
+  }
 
   const sendText = () => {
     if (!inputVal.trim()) return
@@ -99,7 +106,7 @@ export default function ModalNovedades({ ticket, onClose }) {
           </div>
           <div className={styles.chatTopActions}>
             <button className={styles.cancelBtn} onClick={onClose}>Cancelar</button>
-            <button className={styles.submitBtn} onClick={onClose}>Actualizar</button>
+            <button className={styles.submitBtn} onClick={handleActualizar}>Actualizar</button>
           </div>
         </div>
 

@@ -152,6 +152,10 @@ export default function GestionTickets({ session }) {
     setEditTicket(null)
   }
 
+  const handleUpdateStatus = (id, newStatus) => {
+    setTickets(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t))
+  }
+
   return (
     <div className={styles.wrapper}>
 
@@ -313,6 +317,7 @@ export default function GestionTickets({ session }) {
         <ModalNovedades
           ticket={novedadesTicket}
           onClose={() => setNovedadesTicket(null)}
+          onUpdateStatus={handleUpdateStatus}
         />
       )}
     </div>
