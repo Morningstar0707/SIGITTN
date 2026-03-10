@@ -254,8 +254,8 @@
   font-size: 15px;
   font-weight: 600;
   color: #FFFFFF;
-  background: #0f1e33;
-  border: 0.1px solid #FFFFFF;
+   background: #0b1526;
+  border: 1px solid rgba(255,255,255,0.28);
   border-radius: 30px;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
