@@ -306,7 +306,14 @@
   z-index: 1;
   animation: fadeUp 0.7s 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-
+.git{
+  color: #7aa5eb;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.git:hover {
+  color: #587e9c;
+}
 /* ===== ANIMATIONS ===== */
 @keyframes fadeUp {
   from {
