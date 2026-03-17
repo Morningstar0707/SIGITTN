@@ -137,13 +137,16 @@ export default function GestionTickets({ session }) {
     setCargando(true)
     setError('')
 
-    const id_estado = statusFilters.length === 1
-      ? catalogos.estados?.find(e => e.nombre_estado === statusFilters[0])?.id_estado
+    // Convertir nombres de estado a IDs para enviar al backend
+    const estadosIds = statusFilters.length > 0
+      ? statusFilters
+          .map(nombre => catalogos.estados?.find(e => e.nombre_estado === nombre)?.id_estado)
+          .filter(Boolean)
       : undefined
 
     ticketsAPI.listar({
       id_modulo_origen: moduloFilter || undefined,
-      id_estado,
+      estados: estadosIds,
       page: currentPage,
     })
       .then(data => {
