@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { login, me }                                                        from '../controllers/authController.js'
+import { solicitarReset, restablecerPassword, validarToken }               from '../controllers/resetPasswordController.js'
 import { buscarUsuarios, listarUsuarios, crearUsuario, actualizarUsuario }  from '../controllers/usuariosController.js'
 import { listarTickets, obtenerTicket, crearTicket, actualizarTicket, cambiarEstado } from '../controllers/ticketsController.js'
 import { listarMensajes, crearMensaje, marcarLeido }                        from '../controllers/mensajesController.js'
@@ -10,7 +11,12 @@ const router = Router()
 
 // AUTH
 router.post('/auth/login', login)
-router.get('/auth/me',     verificarToken, me)
+router.get('/auth/me',         verificarToken, me)
+
+// RESET DE CONTRASEÑA (rutas públicas — sin token JWT)
+router.post('/auth/solicitar-reset',      solicitarReset)
+router.post('/auth/restablecer-password', restablecerPassword)
+router.get('/auth/validar-token',         validarToken)
 
 // CATÁLOGOS
 router.get('/catalogos', verificarToken, obtenerCatalogos)

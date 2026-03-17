@@ -26,15 +26,30 @@ const SELECT_TICKET = `
  * Filtros opcionales: ?id_modulo_origen=3&id_estado=1&page=1&limit=9
  */
 export async function listarTickets(req, res) {
-  const { id_modulo_origen, id_estado, page = 1, limit = 9 } = req.query
+  const { id_modulo_origen, estados, page = 1, limit = 9 } = req.query
   const offset = (parseInt(page) - 1) * parseInt(limit)
 
   const condiciones = []
   const valores = []
   let idx = 1
 
-  if (id_modulo_origen) { condiciones.push(`t.id_modulo_origen = $${idx++}`);  valores.push(id_modulo_origen) }
-  if (id_estado)        { condiciones.push(`t.id_estado = $${idx++}`);         valores.push(id_estado) }
+  if (id_modulo_origen) {
+    condiciones.push(`t.id_modulo_origen = $${idx++}`)
+    valores.push(id_modulo_origen)
+  }
+
+  // estados = "1,2,3" → filtra por múltiples estados con IN
+  if (estados) {
+    const ids = estados.split(',').map(Number).filter(n => !isNaN(n))
+    if (ids.length === 1) {
+      condiciones.push(`t.id_estado = $${idx++}`)
+      valores.push(ids[0])
+    } else if (ids.length > 1) {
+      const placeholders = ids.map(() => `$${idx++}`).join(', ')
+      condiciones.push(`t.id_estado IN (${placeholders})`)
+      valores.push(...ids)
+    }
+  }
 
   const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : ''
 
