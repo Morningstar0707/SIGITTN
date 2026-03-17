@@ -125,7 +125,7 @@ export default function ModalEditarTicket({ ticket, catalogos, isAdmin, onClose,
                 <div className={styles.selectWrapper}>
                   <select className={styles.select} value={id_asignado} onChange={e => setIdAsignado(e.target.value)}>
                     <option value="">Sin asignar</option>
-                    {catalogos.usuariosAdmin?.map(u => (
+                    {catalogos.usuarios?.map(u => (
                       <option key={u.id_usuario} value={u.id_usuario}>{u.nombre_usuario}</option>
                     ))}
                   </select>
