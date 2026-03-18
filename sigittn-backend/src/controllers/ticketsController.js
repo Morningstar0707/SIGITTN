@@ -116,16 +116,18 @@ export async function crearTicket(req, res) {
   }
 
   try {
-    // Estado inicial = 'Nuevo'
+    const asignado = id_usuario_asignado ? parseInt(id_usuario_asignado) : null
+
+    // Si se asigna responsable al crear → estado 'Asignado', si no → 'Nuevo'
+    const nombreEstadoInicial = asignado ? 'Asignado' : 'Nuevo'
     const { rows: estadoRows } = await pool.query(
-      `SELECT id_estado FROM Estados_Ticket WHERE nombre_estado = 'Nuevo' LIMIT 1`
+      `SELECT id_estado FROM Estados_Ticket WHERE nombre_estado = $1 LIMIT 1`,
+      [nombreEstadoInicial]
     )
     const id_estado = estadoRows[0]?.id_estado
     if (!id_estado) {
-      return res.status(500).json({ error: 'Estado "Nuevo" no encontrado en la base de datos' })
+      return res.status(500).json({ error: `Estado "${nombreEstadoInicial}" no encontrado en la base de datos` })
     }
-
-    const asignado = id_usuario_asignado ? parseInt(id_usuario_asignado) : null
 
     const { rows } = await pool.query(
       `INSERT INTO Tickets

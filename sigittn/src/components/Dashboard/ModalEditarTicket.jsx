@@ -16,14 +16,44 @@ export default function ModalEditarTicket({ ticket, catalogos, isAdmin, onClose,
   const [id_estado,         setIdEstado]     = useState(ticket.id_estado || '')
   const [descripcion,       setDescripcion]  = useState(ticket.descripcion_ticket || '')
   const [id_asignado,       setIdAsignado]   = useState(String(ticket.id_usuario_asignado || ''))
+  const [id_dependencia,    setIdDependencia] = useState(() => {
+    // Pre-seleccionar dependencia del usuario actualmente asignado
+    if (!ticket.id_usuario_asignado) return ''
+    const usuario = (catalogos.usuarios || []).find(u => u.id_usuario === ticket.id_usuario_asignado)
+    if (!usuario) return ''
+    const dep = (catalogos.dependencias || []).find(d => d.nombre_dependencia === usuario.nombre_dependencia)
+    return dep ? String(dep.id_dependencia) : ''
+  })
   const [errors,            setErrors]       = useState({})
   const [loading,           setLoading]      = useState(false)
+
+  // Filtrar usuarios por dependencia seleccionada
+  const usuariosFiltrados = id_dependencia
+    ? (catalogos.usuarios || []).filter(u => {
+        const dep = catalogos.dependencias?.find(d => d.id_dependencia === parseInt(id_dependencia))
+        return dep && u.nombre_dependencia === dep.nombre_dependencia
+      })
+    : (catalogos.usuarios || [])
+
+  const handleDependenciaChange = (val) => {
+    setIdDependencia(val)
+    setIdAsignado('') // limpiar usuario al cambiar dependencia
+  }
 
   const validate = () => {
     const e = {}
     if (!titulo.trim())     e.titulo   = 'Requerido'
     if (!id_modulo_origen)  e.modulo   = 'Requerido'
     if (!id_nivel_urgencia) e.urgencia = 'Requerido'
+
+    // Si el ticket NO está en 'Nuevo', dependencia y responsable son obligatorios
+    const estadoNuevo = catalogos.estados?.find(s => s.nombre_estado === 'Nuevo')
+    const estaEnNuevo = parseInt(id_estado) === estadoNuevo?.id_estado
+    if (!estaEnNuevo) {
+      if (!id_dependencia) e.dependencia = 'Requerido para tickets en este estado'
+      if (!id_asignado)    e.asignado    = 'Requerido para tickets en este estado'
+    }
+
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -31,12 +61,23 @@ export default function ModalEditarTicket({ ticket, catalogos, isAdmin, onClose,
   const handleSubmit = async () => {
     if (!validate()) return
     setLoading(true)
+
+    // Si el ticket está en 'Nuevo' y se le asigna un responsable → pasar a 'Asignado' automáticamente
+    const estadoNuevo    = catalogos.estados?.find(e => e.nombre_estado === 'Nuevo')
+    const estadoAsignado = catalogos.estados?.find(e => e.nombre_estado === 'Asignado')
+    const estaEnNuevo     = parseInt(id_estado) === estadoNuevo?.id_estado
+    const tieneResponsable = !!id_asignado
+
+    const estadoFinal = (estaEnNuevo && tieneResponsable && estadoAsignado)
+      ? estadoAsignado.id_estado
+      : parseInt(id_estado)
+
     const payload = {
       titulo_ticket:      titulo.trim(),
       descripcion_ticket: descripcion.trim(),
       id_modulo_origen:   parseInt(id_modulo_origen),
       id_nivel_urgencia:  parseInt(id_nivel_urgencia),
-      id_estado:          parseInt(id_estado),
+      id_estado:          estadoFinal,
     }
     if (isAdmin) payload.id_usuario_asignado = id_asignado ? parseInt(id_asignado) : null
     try {
@@ -126,15 +167,36 @@ export default function ModalEditarTicket({ ticket, catalogos, isAdmin, onClose,
             </div>
 
             {isAdmin && (
-              <div className={styles.field}>
-                <label className={styles.label}>Usuario asignado</label>
-                <UsuarioSelect
-                  usuarios={catalogos.usuarios || []}
-                  value={id_asignado}
-                  onChange={setIdAsignado}
-                  placeholder="Sin asignar"
-                />
-              </div>
+              <>
+                <div className={styles.field}>
+                  <label className={styles.label}>Dependencia responsable</label>
+                  <div className={styles.selectWrapper}>
+                    <select className={`${styles.select} ${errors.dependencia ? styles.inputError : ''}`}
+                      value={id_dependencia}
+                      onChange={e => handleDependenciaChange(e.target.value)}>
+                      <option value="">Todas las dependencias</option>
+                      {catalogos.dependencias?.map(d => (
+                        <option key={d.id_dependencia} value={d.id_dependencia}>
+                          {d.nombre_dependencia}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {errors.dependencia && <span className={styles.errMsg}>{errors.dependencia}</span>}
+                </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label}>Usuario asignado</label>
+                  <UsuarioSelect
+                    usuarios={usuariosFiltrados}
+                    value={id_asignado}
+                    onChange={setIdAsignado}
+                    placeholder="Sin asignar"
+                    error={!!errors.asignado}
+                  />
+                  {errors.asignado && <span className={styles.errMsg}>{errors.asignado}</span>}
+                </div>
+              </>
             )}
 
             <div className={styles.field}>

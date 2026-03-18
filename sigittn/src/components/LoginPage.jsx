@@ -142,7 +142,7 @@ export default function LoginPage({ onLogin, onOlvidePassword }) {
       </div>
 
       <p className={styles.footer}>
-        © {new Date().getFullYear()} El Terminal Neiva · SIGITTN v2.0 -{' '}
+        © {new Date().getFullYear()} El Terminal Neiva · SIGITTN v1.0 -{' '}
         <a href="https://github.com/Morningstar0707/SIGITTN" target="_blank"
           rel="noopener noreferrer" className={styles.git}>GitHub/Morningstar0707</a>
       </p>

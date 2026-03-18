@@ -57,7 +57,15 @@ export async function solicitarReset(req, res) {
     )
 
     // Enviar correo al email que el usuario escribió
-    await enviarEmailReset(email.trim(), usuario.nombre_usuario, token)
+    try {
+      await enviarEmailReset(email.trim(), usuario.nombre_usuario, token)
+      console.log(`✅  Correo de reset enviado a: ${email.trim()}`)
+    } catch (mailErr) {
+      console.error('❌  Error al enviar correo de reset:')
+      console.error('    Destinatario:', email.trim())
+      console.error('    Error:', mailErr.message)
+      console.error('    Detalle:', mailErr.response || mailErr.code || '')
+    }
 
     return res.json(respuestaGenerica)
 

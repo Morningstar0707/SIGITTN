@@ -42,6 +42,7 @@ export default function UsuarioSelect({
   onChange,
   placeholder = 'Seleccionar usuario',
   disabled = false,
+  error = false,
 }) {
   const [abierto,   setAbierto]   = useState(false)
   const [busqueda,  setBusqueda]  = useState('')
@@ -143,7 +144,7 @@ export default function UsuarioSelect({
           width: '100%',
           padding: '9px 32px 9px 12px',
           background: '#ffffff',
-          border: `1.5px solid ${abierto ? '#1e6fc5' : '#d0dae8'}`,
+          border: `1.5px solid ${abierto ? '#1e6fc5' : error ? '#e05252' : '#d0dae8'}`,
           borderRadius: 9,
           textAlign: 'left',
           fontFamily: 'DM Sans, sans-serif',

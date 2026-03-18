@@ -3,22 +3,50 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 /**
- * Transportador de correo.
- * Usa Gmail con una "App Password" (contraseña de aplicación).
- * Cómo obtener la App Password de Gmail:
- *   1. Ir a myaccount.google.com → Seguridad
- *   2. Activar verificación en dos pasos
- *   3. Buscar "Contraseñas de aplicaciones"
- *   4. Generar una para "Correo / Windows"
- *   5. Pegar esos 16 caracteres en EMAIL_PASS del .env
+ * Transportador de correo configurable por SMTP.
+ * Soporta Gmail, Hotmail/Outlook, y cualquier proveedor.
+ *
+ * Variables requeridas en .env:
+ *   EMAIL_HOST   — servidor SMTP del proveedor
+ *   EMAIL_PORT   — puerto SMTP (opcional, por defecto 587)
+ *   EMAIL_SECURE — true solo si el puerto es 465 (opcional)
+ *   EMAIL_USER   — tu dirección de correo completa
+ *   EMAIL_PASS   — contraseña o contraseña de aplicación
+ *
+ * Ejemplos de configuración en .env:
+ *
+ *  Gmail:
+ *    EMAIL_HOST=smtp.gmail.com
+ *    EMAIL_PORT=587
+ *    EMAIL_USER=tucorreo@gmail.com
+ *    EMAIL_PASS=xxxx xxxx xxxx xxxx   ← contraseña de aplicación de Google
+ *
+ *  Hotmail / Outlook personal:
+ *    EMAIL_HOST=smtp.live.com
+ *    EMAIL_PORT=587
+ *    EMAIL_USER=tucorreo@hotmail.com
+ *    EMAIL_PASS=tu_contraseña
+ *
+ *  Outlook / Microsoft 365 empresarial:
+ *    EMAIL_HOST=smtp.office365.com
+ *    EMAIL_PORT=587
+ *    EMAIL_USER=tucorreo@outlook.com
+ *    EMAIL_PASS=tu_contraseña
  */
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-})
+function crearTransporter() {
+  return nodemailer.createTransport({
+    host:   process.env.EMAIL_HOST,
+    port:   parseInt(process.env.EMAIL_PORT || '587'),
+    secure: process.env.EMAIL_SECURE === 'true',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+    tls: {
+      rejectUnauthorized: process.env.NODE_ENV === 'production',
+    },
+  })
+}
 
 /**
  * Envía el correo de restablecimiento de contraseña.
@@ -83,7 +111,7 @@ export async function enviarEmailReset(destinatario, nombreUsuario, token) {
         <!-- Footer -->
         <div style="background:#f4f6f9;padding:16px 32px;border-top:1px solid #e8edf5">
           <p style="color:#8a9ab0;font-size:12px;margin:0">
-            Terminal de Transporte de Neiva · SIGITTN v2.0
+            Terminal de Transporte de Neiva · SIGITTN v1.0
           </p>
           <p style="color:#b0bfce;font-size:11px;margin:4px 0 0">
             Si el botón no funciona, copia este enlace en tu navegador:<br>
@@ -95,6 +123,7 @@ export async function enviarEmailReset(destinatario, nombreUsuario, token) {
     </html>
   `
 
+  const transporter = crearTransporter()
   await transporter.sendMail({
     from: `"SIGITTN - Terminal Neiva" <${process.env.EMAIL_USER}>`,
     to:   destinatario,

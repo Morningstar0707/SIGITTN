@@ -32,8 +32,7 @@ function fmtHora(iso) {
   return new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
 }
 
-export default function ModalNovedades({ ticket, catalogos, session, onClose, onUpdateStatus }) {
-  const [estado,    setEstado]    = useState(ticket.id_estado || '')
+export default function ModalNovedades({ ticket, session, onClose }) {
   const [mensajes,  setMensajes]  = useState([])
   const [inputVal,  setInputVal]  = useState('')
   const [cargando,  setCargando]  = useState(true)
@@ -51,13 +50,6 @@ export default function ModalNovedades({ ticket, catalogos, session, onClose, on
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [mensajes])
-
-  const handleActualizar = async () => {
-    if (estado && onUpdateStatus) {
-      await onUpdateStatus(ticket.id_ticket, parseInt(estado))
-    }
-    onClose()
-  }
 
   const sendText = async () => {
     if (!inputVal.trim()) return
@@ -101,25 +93,6 @@ export default function ModalNovedades({ ticket, catalogos, session, onClose, on
             Novedades — #{String(ticket.id_ticket).padStart(3,'0')}
           </h2>
           <button className={styles.closeBtn} onClick={onClose}><CloseIcon /></button>
-        </div>
-
-        {/* Cambiar estado */}
-        <div className={styles.chatTopBar}>
-          <div className={styles.field} style={{ flex: 1 }}>
-            <label className={styles.label}>Actualizar estado</label>
-            <div className={styles.selectWrapper}>
-              <select className={styles.select} value={estado} onChange={e => setEstado(e.target.value)}>
-                <option value="">Seleccionar</option>
-                {catalogos.estados?.map(s => (
-                  <option key={s.id_estado} value={s.id_estado}>{s.nombre_estado}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className={styles.chatTopActions}>
-            <button className={styles.cancelBtn} onClick={onClose}>Cancelar</button>
-            <button className={styles.submitBtn} onClick={handleActualizar}>Actualizar</button>
-          </div>
         </div>
 
         {/* Chat */}

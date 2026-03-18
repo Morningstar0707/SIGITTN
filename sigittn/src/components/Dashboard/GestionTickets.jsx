@@ -381,10 +381,8 @@ export default function GestionTickets({ session }) {
       {novedadesTicket && (
         <ModalNovedades
           ticket={novedadesTicket}
-          catalogos={catalogos}
           session={session}
           onClose={() => setNovedadesTicket(null)}
-          onUpdateStatus={handleUpdateStatus}
         />
       )}
     </div>
