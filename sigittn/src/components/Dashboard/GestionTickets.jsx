@@ -5,6 +5,7 @@ import ModalEditarTicket from './ModalEditarTicket'
 import ModalNovedades from './ModalNovedades'
 import ModalInfoTicket from './ModalInfoTicket'
 import { tickets as ticketsAPI, catalogos as catalogosAPI } from '../../api'
+import ModuloSelect from './ModuloSelect'
 
 /* ── Icons ── */
 const PlusIcon = () => (
@@ -217,19 +218,11 @@ export default function GestionTickets({ session }) {
         <h1 className={styles.title}>Gestión de tickets</h1>
         <div className={styles.headerRow}>
           <div className={styles.moduleSelect}>
-            <select
-              className={styles.moduleDropdown}
+            <ModuloSelect
+              modulos={catalogos.modulos || []}
               value={moduloFilter}
-              onChange={e => { setModuloFilter(e.target.value); setCurrentPage(1) }}
-            >
-              <option value="">Seleccionar módulo</option>
-              {catalogos.modulos?.map(m => (
-                <option key={m.id_modulo_origen} value={m.id_modulo_origen}>
-                  {m.nombre_modulo_origen}
-                </option>
-              ))}
-            </select>
-            <span className={styles.selectChevron}><ChevronIcon /></span>
+              onChange={(val) => { setModuloFilter(val); setCurrentPage(1) }}
+            />
           </div>
           <button className={styles.createBtn} onClick={() => setShowCreate(true)}>
             <PlusIcon /> <span>Crear ticket</span>

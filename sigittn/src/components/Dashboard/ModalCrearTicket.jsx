@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import styles from './TicketModal.module.css'
+import ModuloSelect from './ModuloSelect'
+import UsuarioSelect from './UsuarioSelect'
 
 const CloseIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -33,7 +35,7 @@ export default function ModalCrearTicket({ catalogos, onClose, onCreate }) {
 
   const handleDependenciaChange = (val) => {
     setIdDependencia(val)
-    setIdResponsable('')
+    setIdResponsable('') // limpiar usuario al cambiar dependencia
   }
 
   const validate = () => {
@@ -70,7 +72,7 @@ export default function ModalCrearTicket({ catalogos, onClose, onCreate }) {
         </div>
 
         <div className={styles.twoCol}>
-          {/* Izquierda */}
+          {/* ── Izquierda ── */}
           <div className={styles.colLeft}>
             <div className={styles.field}>
               <label className={styles.label}>Título del ticket</label>
@@ -84,19 +86,12 @@ export default function ModalCrearTicket({ catalogos, onClose, onCreate }) {
 
             <div className={styles.field}>
               <label className={styles.label}>Módulo de origen</label>
-              <div className={styles.selectWrapper}>
-                <select
-                  className={`${styles.select} ${errors.modulo ? styles.inputError : ''}`}
-                  value={id_modulo_origen} onChange={e => setIdModulo(e.target.value)}
-                >
-                  <option value="">Seleccionar</option>
-                  {catalogos.modulos?.map(m => (
-                    <option key={m.id_modulo_origen} value={m.id_modulo_origen}>
-                      {m.nombre_modulo_origen}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <ModuloSelect
+                modulos={catalogos.modulos || []}
+                value={id_modulo_origen}
+                onChange={setIdModulo}
+                error={!!errors.modulo}
+              />
               {errors.modulo && <span className={styles.errMsg}>{errors.modulo}</span>}
             </div>
 
@@ -130,7 +125,7 @@ export default function ModalCrearTicket({ catalogos, onClose, onCreate }) {
             </div>
           </div>
 
-          {/* Derecha */}
+          {/* ── Derecha ── */}
           <div className={styles.colRight}>
             <div className={styles.assignBox}>
               <p className={styles.assignTitle}><WarnIcon /> Asignación personalizada</p>
@@ -145,11 +140,8 @@ export default function ModalCrearTicket({ catalogos, onClose, onCreate }) {
             <div className={styles.field}>
               <label className={styles.label}>Dependencia responsable</label>
               <div className={styles.selectWrapper}>
-                <select
-                  className={styles.select}
-                  value={id_dependencia}
-                  onChange={e => handleDependenciaChange(e.target.value)}
-                >
+                <select className={styles.select} value={id_dependencia}
+                  onChange={e => handleDependenciaChange(e.target.value)}>
                   <option value="">Seleccionar</option>
                   {catalogos.dependencias?.map(d => (
                     <option key={d.id_dependencia} value={d.id_dependencia}>
@@ -162,20 +154,12 @@ export default function ModalCrearTicket({ catalogos, onClose, onCreate }) {
 
             <div className={styles.field}>
               <label className={styles.label}>Usuario responsable</label>
-              <div className={styles.selectWrapper}>
-                <select
-                  className={styles.select}
-                  value={id_responsable}
-                  onChange={e => setIdResponsable(e.target.value)}
-                >
-                  <option value="">Seleccionar</option>
-                  {usuariosFiltrados.map(u => (
-                    <option key={u.id_usuario} value={u.id_usuario}>
-                      {u.nombre_usuario}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <UsuarioSelect
+                usuarios={usuariosFiltrados}
+                value={id_responsable}
+                onChange={setIdResponsable}
+                placeholder="Seleccionar responsable"
+              />
             </div>
           </div>
         </div>
