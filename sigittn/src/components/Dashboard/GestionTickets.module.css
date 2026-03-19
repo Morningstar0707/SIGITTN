@@ -630,15 +630,12 @@
     gap: 10px;
   }
 
-  /* En móvil los pills se pueden scrollear horizontalmente */
+  /* En móvil los pills hacen wrap */
   .filterPills {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    gap: 5px;
   }
-  .filterPills::-webkit-scrollbar { display: none; }
 
   /* Reducir pills en móvil para que quepan más */
   .datePill,
