@@ -21,7 +21,7 @@ const EyeIcon = ({ open }) => open ? (
   </svg>
 )
 
-export default function LoginPage({ onLogin }) {
+export default function LoginPage({ onLogin, onOlvidePassword }) {
   const [nombre, setNombre]           = useState('')
   const [password, setPassword]       = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -121,13 +121,28 @@ export default function LoginPage({ onLogin }) {
                 disabled={loading}>
                 {loading ? <span className={styles.spinner} /> : 'Iniciar sesión'}
               </button>
+
+              <button
+                type="button"
+                onClick={onOlvidePassword}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#5a7a96', fontSize: 13, fontFamily: 'DM Sans, sans-serif',
+                  marginTop: 12, display: 'block', width: '100%', textAlign: 'center',
+                  padding: '6px 0', transition: 'color 0.15s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = '#8fb3d6'}
+                onMouseLeave={e => e.currentTarget.style.color = '#5a7a96'}
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
             </form>
           </div>
         </div>
       </div>
 
       <p className={styles.footer}>
-        © {new Date().getFullYear()} El Terminal Neiva · SIGITTN v2.0 -{' '}
+        © {new Date().getFullYear()} El Terminal Neiva · SIGITTN v1.0 -{' '}
         <a href="https://github.com/Morningstar0707/SIGITTN" target="_blank"
           rel="noopener noreferrer" className={styles.git}>GitHub/Morningstar0707</a>
       </p>

@@ -4,7 +4,8 @@ import ModalCrearTicket from './ModalCrearTicket'
 import ModalEditarTicket from './ModalEditarTicket'
 import ModalNovedades from './ModalNovedades'
 import ModalInfoTicket from './ModalInfoTicket'
-import { tickets as ticketsAPI, catalogos as catalogosAPI } from '../../api'
+import { tickets as ticketsAPI, catalogos as catalogosAPI, notificaciones as notifAPI } from '../../api'
+import ModuloSelect from './ModuloSelect'
 
 /* ── Icons ── */
 const PlusIcon = () => (
@@ -123,7 +124,8 @@ export default function GestionTickets({ session }) {
   const [showCreate,      setShowCreate]      = useState(false)
   const [editTicket,      setEditTicket]      = useState(null)
   const [infoTicket,      setInfoTicket]      = useState(null)
-  const [novedadesTicket, setNovedadesTicket] = useState(null)
+  const [novedadesTicket,     setNovedadesTicket]     = useState(null)
+  const [ticketsConNotif,      setTicketsConNotif]      = useState(new Set())
 
   // Cargar catálogos una sola vez
   useEffect(() => {
@@ -132,18 +134,33 @@ export default function GestionTickets({ session }) {
       .catch(() => {})
   }, [])
 
+  // Polling de mensajes no leídos cada 10 segundos
+  useEffect(() => {
+    const fetchNoLeidos = () => {
+      notifAPI.noLeidos()
+        .then(data => setTicketsConNotif(new Set(data.ticketsConNoLeidos)))
+        .catch(() => {})
+    }
+    fetchNoLeidos()
+    const interval = setInterval(fetchNoLeidos, 10000)
+    return () => clearInterval(interval)
+  }, [])
+
   // Cargar tickets desde backend al cambiar filtros de módulo/estado/página
   const cargarTickets = useCallback(() => {
     setCargando(true)
     setError('')
 
-    const id_estado = statusFilters.length === 1
-      ? catalogos.estados?.find(e => e.nombre_estado === statusFilters[0])?.id_estado
+    // Convertir nombres de estado a IDs para enviar al backend
+    const estadosIds = statusFilters.length > 0
+      ? statusFilters
+          .map(nombre => catalogos.estados?.find(e => e.nombre_estado === nombre)?.id_estado)
+          .filter(Boolean)
       : undefined
 
     ticketsAPI.listar({
       id_modulo_origen: moduloFilter || undefined,
-      id_estado,
+      estados: estadosIds,
       page: currentPage,
     })
       .then(data => {
@@ -204,6 +221,18 @@ export default function GestionTickets({ session }) {
     }
   }
 
+  const abrirNovedades = (ticket) => {
+    setNovedadesTicket(ticket)
+    // Quitar la bolita al abrir
+    setTicketsConNotif(prev => {
+      const next = new Set(prev)
+      next.delete(ticket.id_ticket)
+      return next
+    })
+    // Marcar como leídos en el backend
+    notifAPI.marcarTodosLeidos(ticket.id_ticket).catch(() => {})
+  }
+
   const isAdmin = session?.nombre_rol === 'admin'
 
   return (
@@ -214,19 +243,11 @@ export default function GestionTickets({ session }) {
         <h1 className={styles.title}>Gestión de tickets</h1>
         <div className={styles.headerRow}>
           <div className={styles.moduleSelect}>
-            <select
-              className={styles.moduleDropdown}
+            <ModuloSelect
+              modulos={catalogos.modulos || []}
               value={moduloFilter}
-              onChange={e => { setModuloFilter(e.target.value); setCurrentPage(1) }}
-            >
-              <option value="">Seleccionar módulo</option>
-              {catalogos.modulos?.map(m => (
-                <option key={m.id_modulo_origen} value={m.id_modulo_origen}>
-                  {m.nombre_modulo_origen}
-                </option>
-              ))}
-            </select>
-            <span className={styles.selectChevron}><ChevronIcon /></span>
+              onChange={(val) => { setModuloFilter(val); setCurrentPage(1) }}
+            />
           </div>
           <button className={styles.createBtn} onClick={() => setShowCreate(true)}>
             <PlusIcon /> <span>Crear ticket</span>
@@ -293,7 +314,18 @@ export default function GestionTickets({ session }) {
       ) : (
         <div className={styles.grid}>
           {ticketsFiltradosFecha.map(ticket => (
-            <div key={ticket.id_ticket} className={styles.ticketCard}>
+            <div key={ticket.id_ticket} className={styles.ticketCard} style={{ position: 'relative' }}>
+              {ticketsConNotif.has(ticket.id_ticket) && (
+                <span style={{
+                  position: 'absolute', top: -4, right: -4,
+                  width: 18, height: 18, borderRadius: '50%',
+                  background: '#22c55e',
+                  border: '2px solid #ffffff',
+                  boxShadow: '0 0 6px rgba(34,197,94,0.7)',
+                  zIndex: 2,
+                  animation: 'pulse 1.8s ease-in-out infinite',
+                }} />
+              )}
               <div className={styles.cardMain}>
                 <div className={styles.cardTopRow}>
                   <span className={styles.ticketNum}>Ticket #{String(ticket.id_ticket).padStart(3, '0')}</span>
@@ -317,7 +349,7 @@ export default function GestionTickets({ session }) {
                   <InfoIcon />
                 </button>
                 <button className={styles.actionBtn} title="Novedades"
-                  onClick={() => setNovedadesTicket(ticket)}>
+                  onClick={() => abrirNovedades(ticket)}>
                   <ChatIcon />
                 </button>
                 {isAdmin && (
@@ -385,10 +417,8 @@ export default function GestionTickets({ session }) {
       {novedadesTicket && (
         <ModalNovedades
           ticket={novedadesTicket}
-          catalogos={catalogos}
           session={session}
           onClose={() => setNovedadesTicket(null)}
-          onUpdateStatus={handleUpdateStatus}
         />
       )}
     </div>
