@@ -19,6 +19,62 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ===== CONTADORES (fixed top-right, solo desktop) ===== */
+.contadoresWrap {
+  position: fixed;
+  top: 16px;
+  right: 0;
+  left: 0;
+  display: flex;
+  gap: 8px;
+  z-index: 100;
+  justify-content: flex-end;
+  padding-right: 20px;
+  pointer-events: none;
+}
+
+.contadorCard {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 7px 12px;
+  pointer-events: all;
+}
+
+.contadorIcono {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.contadorTexto p {
+  margin: 0;
+}
+
+.contadorLabel {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.contadorNum {
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* Contadores inline (solo móvil) */
+.contadoresInline {
+  display: none;
+}
+
 /* ===== HEADER CARD ===== */
 .headerCard {
   background: #0d1b2e;
@@ -28,7 +84,6 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin: 0 auto; 
 }
 
 .title {
@@ -47,18 +102,18 @@
   gap: 12px;
 }
 
-/* Module dropdown */
 .moduleSelect {
   min-width: 240px;
   max-width: 300px;
 }
 
-/* Create button */
 .createBtn {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 9px 16px;
+  /* Touch target mínimo 44px */
+  min-height: 44px;
   background: #0b1526;
   border: 1px solid rgba(255,255,255,0.28);
   border-radius: 10px;
@@ -83,35 +138,34 @@
   border-radius: 14px;
   padding: 14px 20px;
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  flex-wrap: wrap;
   flex-direction: column;
-  margin: 0 auto; 
+  gap: 12px;
 }
 
 .filterGroup {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  flex-direction: column;
 }
 
 .filterLabel {
   font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  color: #000000;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #374a60;
   white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 .filterDivider {
   width: 100%;
   height: 1px;
-  background: #8a8a8a;
+  background: #e8edf5;
   flex-shrink: 0;
 }
 
@@ -120,7 +174,6 @@
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-  
 }
 
 /* Date pills */
@@ -128,35 +181,35 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 12px;
+  padding: 6px 12px;
+  min-height: 34px;
   background: transparent;
-  border: 1px solid #8a8a8a;
+  border: 1px solid #d0dae8;
   border-radius: 10px;
-  color: #000000;
+  color: #374a60;
   font-family: 'DM Sans', sans-serif;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .datePill:hover {
-  background: rgba(255,255,255,0.06);
-  color: #242424;
-  border-color: rgba(51, 51, 51, 0.25);
+  background: rgba(30,111,197,0.05);
+  border-color: rgba(30,111,197,0.3);
 }
 
 .datePillActive {
-  background: rgba(30,111,197,0.15);
+  background: rgba(30,111,197,0.1);
   border-color: rgba(30,111,197,0.45);
-  color: #90c8ff;
+  color: #1e6fc5;
 }
 
 .pillCheck {
   width: 13px;
   height: 13px;
   border-radius: 3px;
-  border: 1.5px solid #8a8a8a;
+  border: 1.5px solid #b0bfce;
   display: inline-block;
   flex-shrink: 0;
   transition: all 0.15s ease;
@@ -172,22 +225,21 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
+  padding: 6px 12px;
+  min-height: 34px;
   background: transparent;
-  border: 1px solid #8a8a8a;
+  border: 1px solid #d0dae8;
   border-radius: 10px;
-  color: #000000;
+  color: #374a60;
   font-family: 'DM Sans', sans-serif;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .statusPill:hover {
-  background: rgba(255,255,255,0.06);
-  color: #242424;
-  border-color: rgba(51, 51, 51, 0.25);
+  background: rgba(0,0,0,0.04);
 }
 
 .statusDot {
@@ -202,24 +254,22 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
+  padding: 6px 12px;
+  min-height: 34px;
   background: transparent;
-  border: 1px solid rgba(30, 111, 197, 0.4);
+  border: 1px solid rgba(30,111,197,0.4);
   border-radius: 10px;
   color: #1e6fc5;
   font-family: 'DM Sans', sans-serif;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.miPill:hover {
-  background: rgba(30, 111, 197, 0.07);
-}
+.miPill:hover { background: rgba(30,111,197,0.07); }
 .miPillActive {
-  background: rgba(30, 111, 197, 0.12);
-  border-color: rgba(30, 111, 197, 0.5);
-  color: #1e6fc5;
+  background: rgba(30,111,197,0.12);
+  border-color: rgba(30,111,197,0.5);
 }
 
 /* Pill "Asignados a mí" */
@@ -227,24 +277,22 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
+  padding: 6px 12px;
+  min-height: 34px;
   background: transparent;
-  border: 1px solid rgba(124, 58, 237, 0.4);
+  border: 1px solid rgba(124,58,237,0.4);
   border-radius: 10px;
   color: #7c3aed;
   font-family: 'DM Sans', sans-serif;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.asignadoPill:hover {
-  background: rgba(124, 58, 237, 0.07);
-}
+.asignadoPill:hover { background: rgba(124,58,237,0.07); }
 .asignadoPillActive {
-  background: rgba(124, 58, 237, 0.12);
-  border-color: rgba(124, 58, 237, 0.5);
-  color: #7c3aed;
+  background: rgba(124,58,237,0.12);
+  border-color: rgba(124,58,237,0.5);
 }
 
 /* ===== PAGE INDICATOR ===== */
@@ -293,15 +341,15 @@
   background: #e6e6e6;
 }
 
-/* Chip "Mi ticket" — creador */
+/* Chip "Mi ticket" */
 .miTicketBadge {
   font-family: 'DM Sans', sans-serif;
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.3px;
   color: #1e6fc5;
-  background: rgba(30, 111, 197, 0.12);
-  border: 1px solid rgba(30, 111, 197, 0.3);
+  background: rgba(30,111,197,0.12);
+  border: 1px solid rgba(30,111,197,0.3);
   border-radius: 20px;
   padding: 1px 7px;
   white-space: nowrap;
@@ -309,15 +357,15 @@
   text-transform: uppercase;
 }
 
-/* Chip "Asignado a mí" — responsable */
+/* Chip "Asignado a mí" */
 .asignadoBadge {
   font-family: 'DM Sans', sans-serif;
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.3px;
   color: #7c3aed;
-  background: rgba(124, 58, 237, 0.12);
-  border: 1px solid rgba(124, 58, 237, 0.3);
+  background: rgba(124,58,237,0.12);
+  border: 1px solid rgba(124,58,237,0.3);
   border-radius: 20px;
   padding: 1px 7px;
   white-space: nowrap;
@@ -336,7 +384,7 @@
 .cardTopRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
@@ -427,23 +475,22 @@
 }
 
 .actionBtn {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #0b1526;
   border: 1px solid rgba(255,255,255,0.28);
   color: #ffffff;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease;
+  /* Touch target: el padre tiene gap 4px, 3 botones = ~104px — OK */
 }
 
 .actionBtn:hover {
   background: #162746;
-  border: 1px solid rgba(255, 255, 255, 0.301);
-  color: #dddddd;
 }
 
 /* ===== EMPTY STATE ===== */
@@ -466,7 +513,6 @@
   padding: 6px 0;
 }
 
-/* Pagination */
 .pagination {
   display: flex;
   align-items: center;
@@ -474,8 +520,9 @@
 }
 
 .pageArrow {
-  width: 28px;
-  height: 28px;
+  /* Touch target 44px en móvil */
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -484,12 +531,11 @@
   color: #ffffff;
   border-radius: 7px;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease;
 }
 
 .pageArrow:hover:not(:disabled) {
   background: #132236;
-  color: #d0e4f5;
 }
 
 .pageArrow:disabled {
@@ -498,8 +544,8 @@
 }
 
 .pageBtn {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -514,19 +560,14 @@
   transition: all 0.15s ease;
 }
 
-.pageBtn:hover {
-  background: #132236;
-  color: #d0e4f5;
-}
+.pageBtn:hover { background: #132236; }
 
 .pageBtnActive {
   background: #132236;
   border-color: rgba(255,255,255,0.3);
-  color: #ffffff;
   font-weight: 700;
 }
 
-/* Ticket count */
 .ticketCount {
   display: flex;
   align-items: center;
@@ -543,32 +584,106 @@
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (max-width: 580px) {
-  .grid {
-    grid-template-columns: 1fr;
+@media (max-width: 600px) {
+  .wrapper { gap: 10px; }
+
+  /* Ocultar contadores fixed, mostrar inline */
+  .contadoresWrap   { display: none; }
+  .contadoresInline {
+    display: grid;
+    grid-template-columns: 0.5fr 0.5fr;
+    gap: 8px;
+    width: 75%;
+    margin: 0 auto;
   }
 
-  .filterCard {
-    flex-direction: column;
+  .headerCard {
+    padding: 14px 16px 12px;
+    border-radius: 12px;
     gap: 10px;
   }
 
-  .filterDivider {
-    width: 100%;
-    height: 1px;
-  }
+  .title { font-size: 18px; }
 
   .headerRow {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    gap: 8px;
   }
 
   .moduleSelect {
-    min-width: unset;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .createBtn {
+    padding: 9px 12px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .filterCard {
+    padding: 12px 14px;
+    border-radius: 12px;
+    gap: 10px;
+  }
+
+  /* En móvil los pills se pueden scrollear horizontalmente */
+  .filterPills {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .filterPills::-webkit-scrollbar { display: none; }
+
+  /* Reducir pills en móvil para que quepan más */
+  .datePill,
+  .statusPill,
+  .miPill,
+  .asignadoPill {
+    padding: 5px 10px;
+    font-size: 11.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  /* En móvil las cards son horizontales más compactas */
+  .ticketCard {
+    padding: 10px 10px 10px 12px;
+  }
+
+  /* Los botones de acción van en fila en móvil */
+  .cardActions {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .actionBtn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+  }
+
+  .footer {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pagination { gap: 3px; }
+
+  .pageArrow,
+  .pageBtn {
+    width: 40px;
+    height: 40px;
   }
 }

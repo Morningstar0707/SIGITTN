@@ -231,3 +231,56 @@
 .searchWrapper {
   position: relative;
 }
+/* ===== RESPONSIVE ===== */
+@media (max-width: 600px) {
+  .wrapper {
+    gap: 12px;
+  }
+
+  .headerCard {
+    padding: 16px 16px 14px;
+    border-radius: 12px;
+    gap: 12px;
+  }
+
+  .title { font-size: 18px; }
+
+  .headerControls {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .searchInput {
+    font-size: 16px; /* Evita zoom en iOS */
+    min-height: 44px;
+    padding: 10px 12px 10px 34px;
+  }
+
+  .createBtn {
+    min-height: 44px;
+    padding: 9px 12px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .listCard {
+    border-radius: 12px;
+    min-height: 200px;
+    padding: 8px;
+  }
+
+  .userItem {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  /* Ocultar dependencia en pantallas muy pequeñas */
+  .badge:first-of-type {
+    display: none;
+  }
+
+  .editBtn {
+    width: 40px;
+    height: 40px;
+  }
+}

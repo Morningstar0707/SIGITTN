@@ -126,8 +126,9 @@ export default function GestionTickets({ session }) {
   const [showCreate,      setShowCreate]      = useState(false)
   const [editTicket,      setEditTicket]      = useState(null)
   const [infoTicket,      setInfoTicket]      = useState(null)
-  const [novedadesTicket,     setNovedadesTicket]     = useState(null)
-  const [ticketsConNotif,      setTicketsConNotif]      = useState(new Set())
+  const [novedadesTicket, setNovedadesTicket] = useState(null)
+  const [ticketsConNotif, setTicketsConNotif] = useState(new Set())
+  const [contadores,      setContadores]      = useState({ creados: 0, asignados: 0 })
 
   // Cargar catálogos una sola vez
   useEffect(() => {
@@ -135,6 +136,14 @@ export default function GestionTickets({ session }) {
       .then(data => setCatalogos(data))
       .catch(() => {})
   }, [])
+
+  // Contadores del usuario (tickets no cerrados)
+  const fetchContadores = () => {
+    ticketsAPI.contadores()
+      .then(data => setContadores(data))
+      .catch(() => {})
+  }
+  useEffect(() => { fetchContadores() }, [])
 
   // Polling de mensajes no leídos cada 10 segundos
   useEffect(() => {
@@ -210,6 +219,7 @@ export default function GestionTickets({ session }) {
       await ticketsAPI.crear(datos)
       setShowCreate(false)
       cargarTickets()
+      fetchContadores()
     } catch (err) {
       alert(err.message)
     }
@@ -220,6 +230,7 @@ export default function GestionTickets({ session }) {
       await ticketsAPI.actualizar(editTicket.id_ticket, datos)
       setEditTicket(null)
       cargarTickets()
+      fetchContadores()
     } catch (err) {
       alert(err.message)
     }
@@ -250,6 +261,58 @@ export default function GestionTickets({ session }) {
 
   return (
     <div className={styles.wrapper}>
+
+      {/* ── CONTADORES fixed (desktop) ── */}
+      <div className={styles.contadoresWrap}>
+        <div className={styles.contadorCard} style={{ border: '1px solid rgba(30,111,197,0.28)' }}>
+          <div className={styles.contadorIcono} style={{ background: 'rgba(30,111,197,0.1)' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1e6fc5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div className={styles.contadorTexto}>
+            <p className={styles.contadorLabel} style={{ color: '#5a7a9a' }}>Mis tickets activos</p>
+            <p className={styles.contadorNum} style={{ color: '#1e6fc5' }}>{contadores.creados}</p>
+          </div>
+        </div>
+        <div className={styles.contadorCard} style={{ border: '1px solid rgba(124,58,237,0.28)' }}>
+          <div className={styles.contadorIcono} style={{ background: 'rgba(124,58,237,0.1)' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
+          <div className={styles.contadorTexto}>
+            <p className={styles.contadorLabel} style={{ color: '#6a4a9a' }}>Asignados a mí activos</p>
+            <p className={styles.contadorNum} style={{ color: '#7c3aed' }}>{contadores.asignados}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── CONTADORES inline (móvil) ── */}
+      <div className={styles.contadoresInline}>
+        <div className={styles.contadorCard} style={{ border: '1px solid rgba(30,111,197,0.28)' }}>
+          <div className={styles.contadorIcono} style={{ background: 'rgba(30,111,197,0.1)' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1e6fc5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div className={styles.contadorTexto}>
+            <p className={styles.contadorLabel} style={{ color: '#5a7a9a' }}>Mis tickets activos</p>
+            <p className={styles.contadorNum} style={{ color: '#1e6fc5' }}>{contadores.creados}</p>
+          </div>
+        </div>
+        <div className={styles.contadorCard} style={{ border: '1px solid rgba(124,58,237,0.28)' }}>
+          <div className={styles.contadorIcono} style={{ background: 'rgba(124,58,237,0.1)' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
+          <div className={styles.contadorTexto}>
+            <p className={styles.contadorLabel} style={{ color: '#6a4a9a' }}>Asignados a mí activos</p>
+            <p className={styles.contadorNum} style={{ color: '#7c3aed' }}>{contadores.asignados}</p>
+          </div>
+        </div>
+      </div>
 
       {/* ── HEADER CARD ── */}
       <div className={styles.headerCard}>

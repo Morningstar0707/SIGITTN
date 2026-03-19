@@ -5,7 +5,7 @@ import GestionUsuarios from './GestionUsuarios'
 import GestionTickets from './GestionTickets'
 
 const UsersIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
     <circle cx="9" cy="7" r="4"/>
     <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
@@ -13,7 +13,7 @@ const UsersIcon = () => (
   </svg>
 )
 const TicketsIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
     <path d="M16 3h-8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z"/>
     <line x1="8" y1="13" x2="16" y2="13"/>
@@ -35,19 +35,19 @@ const LogoutIcon = () => (
 )
 
 const NAV_ITEMS = [
-  { id: 'usuarios', label: 'Gestionar usuarios', icon: <UsersIcon />, adminOnly: true },
-  { id: 'tickets',  label: 'Gestionar tickets',  icon: <TicketsIcon /> },
+  { id: 'usuarios', label: 'Usuarios',  icon: <UsersIcon />,  adminOnly: true },
+  { id: 'tickets',  label: 'Tickets',   icon: <TicketsIcon /> },
 ]
 
 export default function DashboardLayout({ session, onLogout }) {
-  // El backend devuelve nombre_rol: 'admin' | 'usuario'
   const isAdmin    = session.nombre_rol === 'admin'
   const visibleNav = NAV_ITEMS.filter(item => !item.adminOnly || isAdmin)
   const [activeNav, setActiveNav] = useState(isAdmin ? 'usuarios' : 'tickets')
 
   return (
     <div className={styles.shell}>
-      {/* SIDEBAR */}
+
+      {/* SIDEBAR (desktop) */}
       <aside className={styles.sidebar}>
         <div className={styles.sidebarLogo}>
           <img src={logoImg} alt="El Terminal Neiva" className={styles.logoImg} />
@@ -63,7 +63,7 @@ export default function DashboardLayout({ session, onLogout }) {
               onClick={() => setActiveNav(item.id)}
             >
               <span className={styles.navIcon}>{item.icon}</span>
-              <span className={styles.navLabel}>{item.label}</span>
+              <span className={styles.navLabel}>{item.label === 'Usuarios' ? 'Gestionar usuarios' : 'Gestionar tickets'}</span>
             </button>
           ))}
         </nav>
@@ -91,6 +91,35 @@ export default function DashboardLayout({ session, onLogout }) {
         {activeNav === 'usuarios' && isAdmin && <GestionUsuarios />}
         {activeNav === 'tickets'  && <GestionTickets session={session} />}
       </main>
+
+      {/* BOTTOM NAV (solo móvil) */}
+      <nav className={styles.bottomNav}>
+        {visibleNav.map(item => (
+          <button
+            key={item.id}
+            className={`${styles.bottomNavItem} ${activeNav === item.id ? styles.bottomNavItemActive : ''}`}
+            onClick={() => setActiveNav(item.id)}
+          >
+            {item.icon}
+            <span>{item.label}</span>
+            {activeNav === item.id && <span className={styles.bottomNavDot} />}
+          </button>
+        ))}
+
+        {/* Usuario + logout */}
+        <div className={styles.bottomUserBar}>
+          <div>
+            <p className={styles.bottomUserName}>{session.nombre_usuario}</p>
+            <p className={styles.bottomUserRole}>
+              {session.nombre_rol === 'admin' ? 'Admin' : 'Usuario'}
+            </p>
+          </div>
+          <button className={styles.bottomLogoutBtn} onClick={onLogout} title="Cerrar sesión">
+            <LogoutIcon />
+          </button>
+        </div>
+      </nav>
+
     </div>
   )
 }
