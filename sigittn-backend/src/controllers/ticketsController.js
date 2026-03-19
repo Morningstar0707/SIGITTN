@@ -249,3 +249,34 @@ export async function cambiarEstado(req, res) {
     return res.status(500).json({ error: 'Error interno del servidor' })
   }
 }
+/**
+ * GET /api/tickets/contadores
+ * Devuelve cuántos tickets no cerrados creó el usuario actual
+ * y cuántos le fueron asignados.
+ */
+export async function contadoresUsuario(req, res) {
+  const { id_usuario } = req.usuario
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+         COUNT(*) FILTER (
+           WHERE t.id_usuario_creador = $1
+             AND e.nombre_estado != 'Cerrado'
+         ) AS creados,
+         COUNT(*) FILTER (
+           WHERE t.id_usuario_asignado = $1
+             AND e.nombre_estado != 'Cerrado'
+         ) AS asignados
+       FROM Tickets t
+       JOIN Estados_Ticket e ON e.id_estado = t.id_estado`,
+      [id_usuario]
+    )
+    return res.json({
+      creados:   parseInt(rows[0].creados),
+      asignados: parseInt(rows[0].asignados),
+    })
+  } catch (err) {
+    console.error('Error al obtener contadores:', err)
+    return res.status(500).json({ error: 'Error interno del servidor' })
+  }
+}

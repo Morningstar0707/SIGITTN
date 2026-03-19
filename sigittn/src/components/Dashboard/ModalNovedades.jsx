@@ -129,30 +129,47 @@ export default function ModalNovedades({ ticket, session, onClose }) {
           onClick={() => setImagenExpandida(null)}
           style={{
             position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(0,0,0,0.92)',
             display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', gap: 20,
-            padding: 24,
+            alignItems: 'center', justifyContent: 'center', gap: 16,
+            padding: '24px 32px',
           }}
         >
-          <div
+          {/* Botón X — esquina superior derecha */}
+          <button
+            onClick={() => setImagenExpandida(null)}
+            style={{
+              position: 'fixed', top: 16, right: 16,
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'rgba(0, 0, 0, 0.15)',
+              border: '1px solid rgba(0, 0, 0, 0.25)',
+              color: '#000000', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.28)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.15)'}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+
+          {/* Imagen — ocupa lo máximo posible sin salirse de la pantalla */}
+           <img
+            src={imagenExpandida}
+            alt="evidencia"
             onClick={e => e.stopPropagation()}
             style={{
-              maxWidth: '90vw', maxHeight: '80vh',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              overflow: 'hidden', borderRadius: 12,
+              maxWidth: '88vw',
+              maxHeight: 'calc(80vh - 100px)',
+              width: 'auto',
+              height: 'auto',
+              objectFit: 'contain',
+              borderRadius: 10,
+              marginTop: '18vh',
             }}
-          >
-            <img
-              src={imagenExpandida}
-              alt="evidencia"
-              style={{
-                maxWidth: '100%', maxHeight: '80vh',
-                width: 'auto', height: 'auto',
-                objectFit: 'contain', borderRadius: 12, display: 'block',
-              }}
-            />
-          </div>
+          />
+          {/* Botones */}
           <div style={{ display: 'flex', gap: 12 }} onClick={e => e.stopPropagation()}>
             <button
               onClick={() => handleDescargar(imagenExpandida)}
@@ -180,7 +197,7 @@ export default function ModalNovedades({ ticket, session, onClose }) {
         </div>
       )}
 
-      <div className={styles.overlay} style={{ alignItems: 'flex-start' }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className={styles.overlay} style={{ alignItems: 'flex-start', background: 'transparent', backdropFilter: 'none' }} onClick={e => e.target === e.currentTarget && onClose()}>
         <div style={{
           background: '#ffffff',
           borderRadius: 16,
