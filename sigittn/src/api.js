@@ -89,6 +89,14 @@ export const tickets = {
   },
 }
 
+// MENSAJES NO LEÍDOS
+export const notificaciones = {
+  noLeidos() { return request('/mensajes/no-leidos') },
+  marcarTodosLeidos(ticketId) {
+    return request(`/tickets/${ticketId}/mensajes/leidos`, { method: 'PATCH' })
+  },
+}
+
 // MENSAJES
 export const mensajes = {
   listar(ticketId) { return request(`/tickets/${ticketId}/mensajes`) },

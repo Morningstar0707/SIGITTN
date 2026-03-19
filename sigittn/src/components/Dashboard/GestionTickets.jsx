@@ -4,7 +4,7 @@ import ModalCrearTicket from './ModalCrearTicket'
 import ModalEditarTicket from './ModalEditarTicket'
 import ModalNovedades from './ModalNovedades'
 import ModalInfoTicket from './ModalInfoTicket'
-import { tickets as ticketsAPI, catalogos as catalogosAPI } from '../../api'
+import { tickets as ticketsAPI, catalogos as catalogosAPI, notificaciones as notifAPI } from '../../api'
 import ModuloSelect from './ModuloSelect'
 
 /* ── Icons ── */
@@ -124,13 +124,26 @@ export default function GestionTickets({ session }) {
   const [showCreate,      setShowCreate]      = useState(false)
   const [editTicket,      setEditTicket]      = useState(null)
   const [infoTicket,      setInfoTicket]      = useState(null)
-  const [novedadesTicket, setNovedadesTicket] = useState(null)
+  const [novedadesTicket,     setNovedadesTicket]     = useState(null)
+  const [ticketsConNotif,      setTicketsConNotif]      = useState(new Set())
 
   // Cargar catálogos una sola vez
   useEffect(() => {
     catalogosAPI.obtener()
       .then(data => setCatalogos(data))
       .catch(() => {})
+  }, [])
+
+  // Polling de mensajes no leídos cada 10 segundos
+  useEffect(() => {
+    const fetchNoLeidos = () => {
+      notifAPI.noLeidos()
+        .then(data => setTicketsConNotif(new Set(data.ticketsConNoLeidos)))
+        .catch(() => {})
+    }
+    fetchNoLeidos()
+    const interval = setInterval(fetchNoLeidos, 10000)
+    return () => clearInterval(interval)
   }, [])
 
   // Cargar tickets desde backend al cambiar filtros de módulo/estado/página
@@ -206,6 +219,18 @@ export default function GestionTickets({ session }) {
     } catch (err) {
       alert(err.message)
     }
+  }
+
+  const abrirNovedades = (ticket) => {
+    setNovedadesTicket(ticket)
+    // Quitar la bolita al abrir
+    setTicketsConNotif(prev => {
+      const next = new Set(prev)
+      next.delete(ticket.id_ticket)
+      return next
+    })
+    // Marcar como leídos en el backend
+    notifAPI.marcarTodosLeidos(ticket.id_ticket).catch(() => {})
   }
 
   const isAdmin = session?.nombre_rol === 'admin'
@@ -289,7 +314,18 @@ export default function GestionTickets({ session }) {
       ) : (
         <div className={styles.grid}>
           {ticketsFiltradosFecha.map(ticket => (
-            <div key={ticket.id_ticket} className={styles.ticketCard}>
+            <div key={ticket.id_ticket} className={styles.ticketCard} style={{ position: 'relative' }}>
+              {ticketsConNotif.has(ticket.id_ticket) && (
+                <span style={{
+                  position: 'absolute', top: -4, right: -4,
+                  width: 18, height: 18, borderRadius: '50%',
+                  background: '#22c55e',
+                  border: '2px solid #ffffff',
+                  boxShadow: '0 0 6px rgba(34,197,94,0.7)',
+                  zIndex: 2,
+                  animation: 'pulse 1.8s ease-in-out infinite',
+                }} />
+              )}
               <div className={styles.cardMain}>
                 <div className={styles.cardTopRow}>
                   <span className={styles.ticketNum}>Ticket #{String(ticket.id_ticket).padStart(3, '0')}</span>
@@ -313,7 +349,7 @@ export default function GestionTickets({ session }) {
                   <InfoIcon />
                 </button>
                 <button className={styles.actionBtn} title="Novedades"
-                  onClick={() => setNovedadesTicket(ticket)}>
+                  onClick={() => abrirNovedades(ticket)}>
                   <ChatIcon />
                 </button>
                 {isAdmin && (

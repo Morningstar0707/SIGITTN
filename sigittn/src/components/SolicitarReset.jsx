@@ -162,7 +162,7 @@ export default function SolicitarReset({ onVolver }) {
       </div>
 
       <p className={styles.footer}>
-        © {new Date().getFullYear()} El Terminal Neiva · SIGITTN v2.0
+        © {new Date().getFullYear()} El Terminal Neiva · SIGITTN v1.0
       </p>
     </div>
   )
