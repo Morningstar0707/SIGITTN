@@ -26,7 +26,7 @@ const SELECT_TICKET = `
  * Filtros opcionales: ?id_modulo_origen=3&id_estado=1&page=1&limit=9
  */
 export async function listarTickets(req, res) {
-  const { id_modulo_origen, estados, page = 1, limit = 9 } = req.query
+  const { id_modulo_origen, estados, id_usuario, page = 1, limit = 9 } = req.query
   const offset = (parseInt(page) - 1) * parseInt(limit)
 
   const condiciones = []
@@ -36,6 +36,11 @@ export async function listarTickets(req, res) {
   if (id_modulo_origen) {
     condiciones.push(`t.id_modulo_origen = $${idx++}`)
     valores.push(id_modulo_origen)
+  }
+
+  if (id_usuario) {
+    condiciones.push(`t.id_usuario_asignado = $${idx++}`)
+    valores.push(parseInt(id_usuario))
   }
 
   // estados = "1,2,3" → filtra por múltiples estados con IN
@@ -182,7 +187,7 @@ export async function actualizarTicket(req, res) {
       const { rows: estadoRows } = await pool.query(
         'SELECT nombre_estado FROM Estados_Ticket WHERE id_estado = $1', [id_estado]
       )
-      if (estadoRows[0]?.nombre_estado === 'Cerrado') {
+      if (['Cerrado', 'Resuelto'].includes(estadoRows[0]?.nombre_estado)) {
         campos.push(`fecha_cierre_ticket = NOW()`)
       }
     }
@@ -227,11 +232,11 @@ export async function cambiarEstado(req, res) {
     )
     if (!estadoRows[0]) return res.status(400).json({ error: 'Estado no válido' })
 
-    const esCerrado = estadoRows[0].nombre_estado === 'Cerrado'
+    const requiereCierre = ['Cerrado', 'Resuelto'].includes(estadoRows[0].nombre_estado)
 
     const { rows } = await pool.query(
       `UPDATE Tickets
-       SET id_estado = $1 ${esCerrado ? ', fecha_cierre_ticket = NOW()' : ''}
+       SET id_estado = $1 ${requiereCierre ? ', fecha_cierre_ticket = NOW()' : ''}
        WHERE id_ticket = $2
        RETURNING id_ticket, id_estado, fecha_cierre_ticket`,
       [id_estado, id]
@@ -277,6 +282,103 @@ export async function contadoresUsuario(req, res) {
     })
   } catch (err) {
     console.error('Error al obtener contadores:', err)
+    return res.status(500).json({ error: 'Error interno del servidor' })
+  }
+}
+/**
+ * GET /api/tickets/metricas-usuario
+ * Solo admin. Calcula tiempo promedio de resolución de tickets
+ * creados o asignados a un usuario en un rango de fechas.
+ * Query: id_usuario, desde, hasta (ISO dates)
+ */
+export async function metricasUsuario(req, res) {
+  const { id_usuario, desde, hasta } = req.query
+
+  if (!id_usuario) {
+    return res.status(400).json({ error: 'id_usuario es requerido' })
+  }
+
+  try {
+    const condiciones = [
+      `t.id_usuario_asignado = $1`,
+      `t.fecha_cierre_ticket IS NOT NULL`,
+      `e.nombre_estado IN ('Resuelto', 'Cerrado')`,
+    ]
+    const valores = [parseInt(id_usuario)]
+    let idx = 2
+
+    if (desde) {
+      condiciones.push(`t.fecha_cierre_ticket >= $${idx++}`)
+      valores.push(desde)
+    }
+    if (hasta) {
+      condiciones.push(`t.fecha_cierre_ticket <= $${idx++}`)
+      valores.push(hasta)
+    }
+
+    const where = `WHERE ${condiciones.join(' AND ')}`
+
+    // Query principal: totales, promedios y distribución
+    const { rows } = await pool.query(
+      `SELECT
+         COUNT(*)                                                        AS total_resueltos,
+         AVG(EXTRACT(EPOCH FROM (t.fecha_cierre_ticket - t.fecha_creacion_ticket)) / 3600)
+                                                                         AS promedio_horas,
+         COUNT(*) FILTER (WHERE n.nombre_nivel_urgencia = 'Planificado')  AS planificados,
+         COUNT(*) FILTER (WHERE n.nombre_nivel_urgencia = 'Moderado')     AS moderados,
+         COUNT(*) FILTER (WHERE n.nombre_nivel_urgencia = 'Alto')         AS altos,
+         COUNT(*) FILTER (WHERE n.nombre_nivel_urgencia = 'Inmediata')    AS inmediatas
+       FROM Tickets t
+       JOIN Estados_Ticket          e ON e.id_estado        = t.id_estado
+       JOIN Nivel_urgencia_tickets  n ON n.id_nivel_urgencia = t.id_nivel_urgencia
+       ${where}`,
+      valores
+    )
+
+    // Ticket más rápido
+    const { rows: minRows } = await pool.query(
+      `SELECT t.id_ticket,
+         EXTRACT(EPOCH FROM (t.fecha_cierre_ticket - t.fecha_creacion_ticket)) / 3600 AS horas
+       FROM Tickets t
+       JOIN Estados_Ticket e ON e.id_estado = t.id_estado
+       JOIN Nivel_urgencia_tickets n ON n.id_nivel_urgencia = t.id_nivel_urgencia
+       ${where}
+       ORDER BY horas ASC
+       LIMIT 1`,
+      valores
+    )
+
+    // Ticket más lento
+    const { rows: maxRows } = await pool.query(
+      `SELECT t.id_ticket,
+         EXTRACT(EPOCH FROM (t.fecha_cierre_ticket - t.fecha_creacion_ticket)) / 3600 AS horas
+       FROM Tickets t
+       JOIN Estados_Ticket e ON e.id_estado = t.id_estado
+       JOIN Nivel_urgencia_tickets n ON n.id_nivel_urgencia = t.id_nivel_urgencia
+       ${where}
+       ORDER BY horas DESC
+       LIMIT 1`,
+      valores
+    )
+
+    const r      = rows[0]
+    const minRow = minRows[0]
+    const maxRow = maxRows[0]
+
+    return res.json({
+      total_resueltos:  parseInt(r.total_resueltos),
+      promedio_horas:   r.promedio_horas ? parseFloat(parseFloat(r.promedio_horas).toFixed(1)) : null,
+      min_horas:        minRow ? parseFloat(parseFloat(minRow.horas).toFixed(1)) : null,
+      min_ticket:       minRow ? parseInt(minRow.id_ticket) : null,
+      max_horas:        maxRow ? parseFloat(parseFloat(maxRow.horas).toFixed(1)) : null,
+      max_ticket:       maxRow ? parseInt(maxRow.id_ticket) : null,
+      planificados:     parseInt(r.planificados),
+      moderados:        parseInt(r.moderados),
+      altos:            parseInt(r.altos),
+      inmediatas:       parseInt(r.inmediatas),
+    })
+  } catch (err) {
+    console.error('Error al calcular métricas:', err)
     return res.status(500).json({ error: 'Error interno del servidor' })
   }
 }

@@ -142,7 +142,7 @@ export default function UsuarioSelect({
         disabled={disabled}
         style={{
           width: '100%',
-          padding: '9px 32px 9px 12px',
+          padding: '9px 120px 9px 12px',
           background: '#ffffff',
           border: `1.5px solid ${abierto ? '#1e6fc5' : error ? '#e05252' : '#d0dae8'}`,
           borderRadius: 9,

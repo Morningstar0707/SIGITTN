@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { login, me }                                                        from '../controllers/authController.js'
 import { solicitarReset, restablecerPassword, validarToken }               from '../controllers/resetPasswordController.js'
 import { buscarUsuarios, listarUsuarios, crearUsuario, actualizarUsuario }  from '../controllers/usuariosController.js'
-import { listarTickets, obtenerTicket, crearTicket, actualizarTicket, cambiarEstado, contadoresUsuario } from '../controllers/ticketsController.js'
+import { listarTickets, obtenerTicket, crearTicket, actualizarTicket, cambiarEstado, contadoresUsuario, metricasUsuario } from '../controllers/ticketsController.js'
 import { listarMensajes, crearMensaje, marcarLeido, noLeidos, marcarTodosLeidos } from '../controllers/mensajesController.js'
 import { obtenerCatalogos }                                                 from '../controllers/catalogosController.js'
 import { verificarToken, soloAdmin }                                        from '../middleware/auth.js'
@@ -29,6 +29,7 @@ router.put('/usuarios/:id',    verificarToken, soloAdmin, actualizarUsuario)
 
 // TICKETS
 router.get('/tickets/contadores',   verificarToken, contadoresUsuario)
+router.get('/tickets/metricas',      verificarToken, soloAdmin, metricasUsuario)
 router.get('/tickets',              verificarToken, listarTickets)
 router.get('/tickets/:id',          verificarToken, obtenerTicket)
 router.post('/tickets',             verificarToken, crearTicket)
