@@ -5,6 +5,7 @@ import ModalEditarTicket from './ModalEditarTicket'
 import ModalNovedades from './ModalNovedades'
 import ModalInfoTicket from './ModalInfoTicket'
 import { tickets as ticketsAPI, catalogos as catalogosAPI, notificaciones as notifAPI } from '../../api'
+import UsuarioSelect from './UsuarioSelect'
 import ModuloSelect from './ModuloSelect'
 
 /* ── Icons ── */
@@ -75,6 +76,15 @@ function StatusBadge({ status }) {
   )
 }
 
+function formatHoras(h) {
+  if (h === null || h === undefined) return '—'
+  if (h < 1) return `${Math.round(h * 60)} min`
+  if (h < 24) return `${h.toFixed(1)} h`
+  const dias = Math.floor(h / 24)
+  const hRest = (h % 24).toFixed(0)
+  return hRest > 0 ? `${dias}d ${hRest}h` : `${dias}d`
+}
+
 function formatFecha(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -85,7 +95,7 @@ function formatHora(iso) {
 }
 
 // Calcula si una fecha ISO cae dentro de un filtro de fecha
-function matchDateFilter(isoDate, filter) {
+function matchDateFilter(isoDate, filter, desde, hasta) {
   if (!isoDate) return false
   const d     = new Date(isoDate)
   const now   = new Date()
@@ -106,6 +116,14 @@ function matchDateFilter(isoDate, filter) {
   if (filter === 'Este año') {
     return d.getFullYear() === now.getFullYear()
   }
+  if (filter === 'Personalizado') {
+    if (!desde && !hasta) return true
+    const dDesde = desde ? new Date(desde) : null
+    const dHasta = hasta ? new Date(hasta + 'T23:59:59') : null
+    if (dDesde && d < dDesde) return false
+    if (dHasta && d > dHasta) return false
+    return true
+  }
   return false
 }
 
@@ -120,8 +138,17 @@ export default function GestionTickets({ session }) {
   const [moduloFilter,  setModuloFilter]  = useState('')
   const [dateFilters,   setDateFilters]   = useState([])
   const [statusFilters, setStatusFilters] = useState([])
-  const [miTicketsFilter,  setMiTicketsFilter]  = useState(false)
-  const [asignadosFilter,  setAsignadosFilter]  = useState(false)
+  const [miTicketsFilter,    setMiTicketsFilter]    = useState(false)
+  const [asignadosFilter,    setAsignadosFilter]    = useState(false)
+  const [fechaFiltroDesde,   setFechaFiltroDesde]   = useState('')
+  const [fechaFiltroHasta,   setFechaFiltroHasta]   = useState('')
+  const [customFechaActivo,  setCustomFechaActivo]  = useState(false)
+  const [usuarioFilter,    setUsuarioFilter]    = useState('')
+  const [periodoMetricas,  setPeriodoMetricas]  = useState('mes')
+  const [fechaDesde,       setFechaDesde]       = useState('')
+  const [fechaHasta,       setFechaHasta]       = useState('')
+  const [metricas,         setMetricas]         = useState(null)
+  const [cargandoMetricas, setCargandoMetricas] = useState(false)
 
   const [showCreate,      setShowCreate]      = useState(false)
   const [editTicket,      setEditTicket]      = useState(null)
@@ -144,6 +171,35 @@ export default function GestionTickets({ session }) {
       .catch(() => {})
   }
   useEffect(() => { fetchContadores() }, [])
+
+  // Calcular fechas según periodo
+  function getRangoFechas(periodo) {
+    const ahora = new Date()
+    const hasta = new Date(ahora)
+    hasta.setHours(23, 59, 59, 999)
+    const desde = new Date(ahora)
+    if (periodo === 'hoy')    { desde.setHours(0, 0, 0, 0) }
+    if (periodo === 'semana') { desde.setDate(ahora.getDate() - (ahora.getDay() || 7) + 1); desde.setHours(0,0,0,0) }
+    if (periodo === 'mes')    { desde.setDate(1); desde.setHours(0,0,0,0) }
+    if (periodo === 'anio')   { desde.setMonth(0,1); desde.setHours(0,0,0,0) }
+    if (periodo === 'custom') return null
+    return { desde: desde.toISOString(), hasta: hasta.toISOString() }
+  }
+
+  const cargarMetricas = useCallback(() => {
+    if (!usuarioFilter) { setMetricas(null); return }
+    const rango = periodoMetricas === 'custom'
+      ? (fechaDesde && fechaHasta ? { desde: new Date(fechaDesde).toISOString(), hasta: new Date(fechaHasta + 'T23:59:59').toISOString() } : null)
+      : getRangoFechas(periodoMetricas)
+    if (periodoMetricas === 'custom' && !rango) return
+    setCargandoMetricas(true)
+    ticketsAPI.metricas({ id_usuario: usuarioFilter, desde: rango?.desde, hasta: rango?.hasta })
+      .then(data => setMetricas(data))
+      .catch(() => setMetricas(null))
+      .finally(() => setCargandoMetricas(false))
+  }, [usuarioFilter, periodoMetricas, fechaDesde, fechaHasta])
+
+  useEffect(() => { cargarMetricas() }, [cargarMetricas])
 
   // Polling de mensajes no leídos cada 10 segundos
   useEffect(() => {
@@ -172,6 +228,7 @@ export default function GestionTickets({ session }) {
     ticketsAPI.listar({
       id_modulo_origen: moduloFilter || undefined,
       estados: estadosIds,
+      id_usuario: usuarioFilter || undefined,
       page: currentPage,
     })
       .then(data => {
@@ -181,16 +238,22 @@ export default function GestionTickets({ session }) {
       })
       .catch(err => setError(err.message))
       .finally(() => setCargando(false))
-  }, [moduloFilter, statusFilters, currentPage, catalogos.estados])
+  }, [moduloFilter, statusFilters, currentPage, catalogos.estados, usuarioFilter])
 
   useEffect(() => { cargarTickets() }, [cargarTickets])
 
   // Filtro por fecha → mis tickets → asignados a mí (todos en cliente)
-  const ticketsPorFecha = dateFilters.length === 0
+  const ticketsPorFecha = (dateFilters.length === 0 && !customFechaActivo)
     ? listaTickets
-    : listaTickets.filter(t =>
-        dateFilters.some(f => matchDateFilter(t.fecha_creacion_ticket, f))
-      )
+    : listaTickets.filter(t => {
+        if (dateFilters.length > 0) {
+          return dateFilters.some(f => matchDateFilter(t.fecha_creacion_ticket, f, fechaFiltroDesde, fechaFiltroHasta))
+        }
+        if (customFechaActivo) {
+          return matchDateFilter(t.fecha_creacion_ticket, 'Personalizado', fechaFiltroDesde, fechaFiltroHasta)
+        }
+        return true
+      })
 
   const ticketsFiltrados = ticketsPorFecha.filter(t => {
     const esMio      = t.id_usuario_creador  === session?.id_usuario
@@ -202,7 +265,15 @@ export default function GestionTickets({ session }) {
   })
 
   const toggleDateFilter = (f) => {
-    setDateFilters(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f])
+    if (f === 'Personalizado') {
+      setCustomFechaActivo(prev => !prev)
+      setDateFilters([])
+    } else {
+      setCustomFechaActivo(false)
+      setFechaFiltroDesde('')
+      setFechaFiltroHasta('')
+      setDateFilters(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f])
+    }
     setCurrentPage(1)
   }
   const toggleStatusFilter = (nombre) => {
@@ -347,8 +418,54 @@ export default function GestionTickets({ session }) {
                 {f}
               </button>
             ))}
+            <button
+              className={`${styles.datePill} ${customFechaActivo ? styles.datePillActive : ''}`}
+              onClick={() => toggleDateFilter('Personalizado')}
+            >
+              <span className={`${styles.pillCheck} ${customFechaActivo ? styles.pillCheckActive : ''}`} />
+              Personalizado
+            </button>
           </div>
         </div>
+
+        {/* Rango personalizado de fechas */}
+        {customFechaActivo && (
+          <div className={styles.filterGroup} style={{ gap: 10 }}>
+            <span className={styles.filterLabel}>Rango:</span>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <span style={{ fontSize: 11, color: '#4a5e78', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>Desde</span>
+                <input
+                  type="date"
+                  className={styles.customInput}
+                  value={fechaFiltroDesde}
+                  onChange={e => { setFechaFiltroDesde(e.target.value); setCurrentPage(1) }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <span style={{ fontSize: 11, color: '#4a5e78', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>Hasta</span>
+                <input
+                  type="date"
+                  className={styles.customInput}
+                  value={fechaFiltroHasta}
+                  onChange={e => { setFechaFiltroHasta(e.target.value); setCurrentPage(1) }}
+                />
+              </div>
+              {(fechaFiltroDesde || fechaFiltroHasta) && (
+                <button
+                  onClick={() => { setFechaFiltroDesde(''); setFechaFiltroHasta('') }}
+                  style={{
+                    marginTop: 16, padding: '5px 10px', border: '1px solid #d0dae8',
+                    borderRadius: 7, background: 'transparent', color: '#4a5e78',
+                    fontFamily: 'DM Sans, sans-serif', fontSize: 11.5, cursor: 'pointer',
+                  }}
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className={styles.filterDivider} />
 
@@ -374,6 +491,28 @@ export default function GestionTickets({ session }) {
           </div>
         </div>
 
+        {isAdmin && (
+          <>
+            <div className={styles.filterDivider} />
+            <div className={styles.filterGroup}>
+              <span className={styles.filterLabel}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+                {' '}Filtrar por usuario:
+              </span>
+              <div style={{ minWidth: 220, maxWidth: 300 }}>
+                <UsuarioSelect
+                  usuarios={catalogos.usuarios || []}
+                  value={usuarioFilter}
+                  onChange={val => { setUsuarioFilter(val); setCurrentPage(1) }}
+                  placeholder="Todos los usuarios"
+                />
+              </div>
+            </div>
+          </>
+        )}
+
         <div className={styles.filterDivider} />
 
         {/* Filtro por rol del usuario */}
@@ -397,6 +536,116 @@ export default function GestionTickets({ session }) {
           </div>
         </div>
       </div>
+
+
+      {/* ── PANEL DE MÉTRICAS (solo admin con usuario seleccionado) ── */}
+      {isAdmin && usuarioFilter && (
+        <div className={styles.metricasPanel}>
+          {/* Header */}
+          <div className={styles.metricasHeader}>
+            <div>
+              <p className={styles.metricasTitle}>
+                Métricas de{' '}
+                <strong>
+                  {(catalogos.usuarios || []).find(u => String(u.id_usuario) === String(usuarioFilter))?.nombre_usuario || '—'}
+                </strong>
+              </p>
+              <p className={styles.metricasSubtitle}>Tiempo promedio de resolución de tickets</p>
+            </div>
+            {/* Selector de período */}
+            <div className={styles.metricasPeriodos}>
+              {[
+                { key: 'hoy',    label: 'Hoy' },
+                { key: 'semana', label: 'Semana' },
+                { key: 'mes',    label: 'Mes' },
+                { key: 'anio',   label: 'Año' },
+                { key: 'custom', label: 'Personalizado' },
+              ].map(p => (
+                <button
+                  key={p.key}
+                  className={`${styles.periodoPill} ${periodoMetricas === p.key ? styles.periodoPillActive : ''}`}
+                  onClick={() => setPeriodoMetricas(p.key)}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Rango personalizado */}
+          {periodoMetricas === 'custom' && (
+            <div className={styles.customRango}>
+              <div className={styles.customField}>
+                <label className={styles.customLabel}>Desde</label>
+                <input type="date" className={styles.customInput}
+                  value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} />
+              </div>
+              <div className={styles.customField}>
+                <label className={styles.customLabel}>Hasta</label>
+                <input type="date" className={styles.customInput}
+                  value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {/* Indicadores */}
+          {cargandoMetricas ? (
+            <p className={styles.metricasCargando}>Calculando métricas...</p>
+          ) : metricas && metricas.total_resueltos > 0 ? (
+            <div className={styles.metricasGrid}>
+              <div className={styles.metricaCard} style={{ borderColor: 'rgba(34,197,94,0.3)' }}>
+                <p className={styles.metricaNum} style={{ color: '#16a34a' }}>{metricas.total_resueltos}</p>
+                <p className={styles.metricaLabel}>Tickets resueltos</p>
+              </div>
+              <div className={styles.metricaCard} style={{ borderColor: 'rgba(30,111,197,0.3)' }}>
+                <p className={styles.metricaNum} style={{ color: '#1e6fc5' }}>{formatHoras(metricas.promedio_horas)}</p>
+                <p className={styles.metricaLabel}>Tiempo promedio</p>
+              </div>
+              <div className={styles.metricaCard} style={{ borderColor: 'rgba(34,197,94,0.2)' }}>
+                <p className={styles.metricaNum} style={{ color: '#16a34a' }}>{formatHoras(metricas.min_horas)}</p>
+                <p className={styles.metricaLabel}>Más rápido</p>
+                {metricas.min_ticket && (
+                  <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: '#16a34a', opacity: 0.75, margin: 0 }}>
+                    Ticket #{String(metricas.min_ticket).padStart(3, '0')}
+                  </p>
+                )}
+              </div>
+              <div className={styles.metricaCard} style={{ borderColor: 'rgba(239,68,68,0.2)' }}>
+                <p className={styles.metricaNum} style={{ color: '#dc2626' }}>{formatHoras(metricas.max_horas)}</p>
+                <p className={styles.metricaLabel}>Más lento</p>
+                {metricas.max_ticket && (
+                  <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: '#dc2626', opacity: 0.75, margin: 0 }}>
+                    Ticket #{String(metricas.max_ticket).padStart(3, '0')}
+                  </p>
+                )}
+              </div>
+
+              {/* Distribución por urgencia */}
+              <div className={styles.metricaCardWide}>
+                <p className={styles.metricaLabel} style={{ marginBottom: 8 }}>Distribución por urgencia</p>
+                <div className={styles.urgenciaBar}>
+                  {[
+                    { label: 'Planificado', val: metricas.planificados, color: '#3b82f6' },
+                    { label: 'Moderado',    val: metricas.moderados,    color: '#f59e0b' },
+                    { label: 'Alto',        val: metricas.altos,        color: '#f97316' },
+                    { label: 'Inmediata',   val: metricas.inmediatas,   color: '#ef4444' },
+                  ].map(u => (
+                    <div key={u.label} className={styles.urgenciaItem}>
+                      <span className={styles.urgenciaDot} style={{ background: u.color }} />
+                      <span className={styles.urgenciaLabel}>{u.label}</span>
+                      <span className={styles.urgenciaCount} style={{ color: u.color }}>{u.val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className={styles.metricasVacio}>
+              {metricas ? 'Sin tickets resueltos en este período.' : 'Selecciona un período para ver las métricas.'}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* ── PAGE INDICATOR ── */}
       <div className={styles.pageIndicator}>
