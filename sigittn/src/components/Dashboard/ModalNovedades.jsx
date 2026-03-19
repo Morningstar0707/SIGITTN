@@ -20,6 +20,12 @@ const ImageIcon = () => (
     <polyline points="21 15 16 10 5 21"/>
   </svg>
 )
+const VideoIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="23 7 16 12 23 17 23 7"/>
+    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+  </svg>
+)
 const DownloadIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -50,12 +56,14 @@ export default function ModalNovedades({ ticket, session, onClose }) {
   const [imagenExpandida, setImagenExpandida] = useState(null)
   const messagesRef = useRef(null)
   const fileRef     = useRef(null)
+  const videoRef    = useRef(null)
 
   const miId       = session?.id_usuario
   const esAdmin    = session?.nombre_rol === 'admin'
   const esCreador  = ticket.id_usuario_creador  === miId
   const esAsignado = ticket.id_usuario_asignado === miId
   const puedeMensajear = esAdmin || esCreador || esAsignado
+  const esCerrado      = ticket.nombre_estado === 'Cerrado'
 
   useEffect(() => {
     if (!puedeMensajear) {
@@ -99,6 +107,23 @@ export default function ModalNovedades({ ticket, session, onClose }) {
     }
   }
 
+  const handleVideo = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = async () => {
+      const base64 = reader.result
+      try {
+        const data = await mensajesAPI.enviarImagen(ticket.id_ticket, base64)
+        setMensajes(prev => [...prev, { ...data.mensaje, url_imagen_mensaje: base64 }])
+      } catch (err) {
+        alert(err.message)
+      }
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
   const handleKey = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText() }
   }
@@ -128,47 +153,33 @@ export default function ModalNovedades({ ticket, session, onClose }) {
         <div
           onClick={() => setImagenExpandida(null)}
           style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
+            position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)',
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center', gap: 16,
             padding: '24px 32px',
           }}
         >
-          {/* Botón X — esquina superior derecha */}
-          <button
-            onClick={() => setImagenExpandida(null)}
-            style={{
-              position: 'fixed', top: 16, right: 16,
-              width: 36, height: 36, borderRadius: '50%',
-              background: 'rgba(0, 0, 0, 0.15)',
-              border: '1px solid rgba(0, 0, 0, 0.25)',
-              color: '#000000', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.28)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.15)'}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-
-          {/* Imagen — ocupa lo máximo posible sin salirse de la pantalla */}
-           <img
-            src={imagenExpandida}
-            alt="evidencia"
+          {/* Imagen + botón X juntos en un contenedor relativo */}
+          <div
             onClick={e => e.stopPropagation()}
-            style={{
-              maxWidth: '88vw',
-              maxHeight: 'calc(80vh - 100px)',
-              width: 'auto',
-              height: 'auto',
-              objectFit: 'contain',
-              borderRadius: 10,
-              marginTop: '18vh',
-            }}
-          />
+            style={{ position: 'relative' }}
+            className={styles.lightboxContenido}
+          >
+            <img
+              src={imagenExpandida}
+              alt="evidencia"
+              style={{
+                maxWidth: '88vw',
+                maxHeight: 'calc(82vh - 100px)',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+                borderRadius: 10,
+                display: 'block',
+              }}
+            />
+
+          </div>
           {/* Botones */}
           <div style={{ display: 'flex', gap: 12 }} onClick={e => e.stopPropagation()}>
             <button
@@ -187,7 +198,7 @@ export default function ModalNovedades({ ticket, session, onClose }) {
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '10px 22px', borderRadius: 24,
-                background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff',
+                background: 'rgb(255, 0, 0)', border: 'none', color: '#fff',
                 fontFamily: 'DM Sans, sans-serif', fontSize: 14, cursor: 'pointer',
               }}
             >
@@ -349,35 +360,44 @@ export default function ModalNovedades({ ticket, session, onClose }) {
                           )}
 
                           {msg.url_imagen_mensaje ? (
-                            /* Burbuja de imagen */
+                            /* Burbuja de imagen o video */
                             <div style={{
                               background: esMio ? '#d1e4f7' : '#ffffff',
                               borderRadius: esMio ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
                               padding: 4,
                               boxShadow: '0 1px 2px rgba(0,0,0,0.13)',
-                              cursor: 'pointer',
                               overflow: 'hidden',
-                            }}
-                              onClick={() => setImagenExpandida(msg.url_imagen_mensaje)}
-                            >
-                              <div style={{ position: 'relative' }}>
-                                <img
+                            }}>
+                              {msg.url_imagen_mensaje.startsWith('data:video') ? (
+                                /* Video */
+                                <video
                                   src={msg.url_imagen_mensaje}
-                                  alt="evidencia"
-                                  className={styles.chatImg}
+                                  controls
+                                  style={{
+                                    width: 220, maxWidth: '100%', borderRadius: 8,
+                                    display: 'block',
+                                  }}
                                 />
-                                {/* Overlay hover */}
-                                <div style={{
-                                  position: 'absolute', inset: 0, borderRadius: 6,
-                                  background: 'rgba(0,0,0,0)',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  transition: 'background 0.2s',
-                                }}
-                                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.3)'}
-                                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0)'}
-                                >
+                              ) : (
+                                /* Imagen */
+                                <div style={{ position: 'relative', cursor: 'pointer' }}
+                                  onClick={() => setImagenExpandida(msg.url_imagen_mensaje)}>
+                                  <img
+                                    src={msg.url_imagen_mensaje}
+                                    alt="evidencia"
+                                    className={styles.chatImg}
+                                  />
+                                  <div style={{
+                                    position: 'absolute', inset: 0, borderRadius: 6,
+                                    background: 'rgba(0,0,0,0)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    transition: 'background 0.2s',
+                                  }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.3)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0)'}
+                                  />
                                 </div>
-                              </div>
+                              )}
                               <div style={{
                                 display: 'flex', justifyContent: 'flex-end',
                                 padding: '2px 6px 2px',
@@ -421,27 +441,51 @@ export default function ModalNovedades({ ticket, session, onClose }) {
               </div>
 
               {/* Input */}
-              <div className={styles.chatInput}>
-                <input
-                  type="text"
-                  className={styles.chatTextInput}
-                  placeholder="Escribe un mensaje..."
-                  value={inputVal}
-                  onChange={e => setInputVal(e.target.value)}
-                  onKeyDown={handleKey}
-                />
-                {inputVal.trim() ? (
-                  <button className={styles.chatSendBtn} onClick={sendText}>
-                    <SendIcon />
-                  </button>
-                ) : (
-                  <button className={styles.chatSendBtn} onClick={() => fileRef.current?.click()}>
-                    <ImageIcon />
-                  </button>
-                )}
-                <input ref={fileRef} type="file" accept="image/*"
-                  style={{ display: 'none' }} onChange={handleImage} />
-              </div>
+              {esCerrado ? (
+                <div style={{
+                  padding: '10px 16px',
+                  background: '#f4f6f9',
+                  borderTop: '1px solid #e8edf5',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: '#8aa0b8',
+                }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                  Ticket cerrado — solo lectura
+                </div>
+              ) : (
+                <div className={styles.chatInput}>
+                  <input
+                    type="text"
+                    className={styles.chatTextInput}
+                    placeholder="Escribe un mensaje..."
+                    value={inputVal}
+                    onChange={e => setInputVal(e.target.value)}
+                    onKeyDown={handleKey}
+                  />
+                  {inputVal.trim() ? (
+                    <button className={styles.chatSendBtn} onClick={sendText}>
+                      <SendIcon />
+                    </button>
+                  ) : (
+                    <>
+                      <button className={styles.chatSendBtn} title="Enviar imagen"
+                        onClick={() => fileRef.current?.click()}>
+                        <ImageIcon />
+                      </button>
+                      <button className={styles.chatSendBtn} title="Enviar video"
+                        onClick={() => videoRef.current?.click()}>
+                        <VideoIcon />
+                      </button>
+                    </>
+                  )}
+                  <input ref={fileRef} type="file" accept="image/*"
+                    style={{ display: 'none' }} onChange={handleImage} />
+                  <input ref={videoRef} type="file" accept="video/*"
+                    style={{ display: 'none' }} onChange={handleVideo} />
+                </div>
+              )}
             </div>
           )}
         </div>

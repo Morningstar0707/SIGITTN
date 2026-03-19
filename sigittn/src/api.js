@@ -71,15 +71,23 @@ export const usuarios = {
 
 // TICKETS
 export const tickets = {
-  listar({ id_modulo_origen, estados, page = 1, limit = 9 } = {}) {
+  listar({ id_modulo_origen, estados, id_usuario, page = 1, limit = 9 } = {}) {
     const p = new URLSearchParams()
     if (id_modulo_origen)          p.set('id_modulo_origen', id_modulo_origen)
     if (estados && estados.length) p.set('estados', estados.join(','))
+    if (id_usuario)                p.set('id_usuario', id_usuario)
     p.set('page', page)
     p.set('limit', limit)
     return request(`/tickets?${p}`)
   },
   contadores()      { return request('/tickets/contadores') },
+  metricas({ id_usuario, desde, hasta } = {}) {
+    const p = new URLSearchParams()
+    p.set('id_usuario', id_usuario)
+    if (desde) p.set('desde', desde)
+    if (hasta) p.set('hasta', hasta)
+    return request(`/tickets/metricas?${p}`)
+  },
   obtener(id)       { return request(`/tickets/${id}`) },
   crear(datos)      { return request('/tickets', { method: 'POST', body: JSON.stringify(datos) }) },
   actualizar(id, datos) {

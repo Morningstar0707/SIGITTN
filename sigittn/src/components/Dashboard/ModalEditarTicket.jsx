@@ -180,15 +180,29 @@ export default function ModalEditarTicket({ ticket, catalogos, isAdmin, onClose,
           <div className={styles.colRight}>
             <div className={styles.field}>
               <label className={styles.label}>Estado</label>
-              <div className={styles.selectWrapper}>
-                <select className={styles.select} value={id_estado}
-                  onChange={e => setIdEstado(e.target.value)}>
-                  <option value="">Seleccionar</option>
-                  {catalogos.estados?.map(e => (
-                    <option key={e.id_estado} value={e.id_estado}>{e.nombre_estado}</option>
-                  ))}
-                </select>
-              </div>
+              {(() => {
+                const estaCerrado = catalogos.estados?.find(e => e.nombre_estado === 'Cerrado')?.id_estado === parseInt(id_estado)
+                return estaCerrado ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input className={styles.input} type="text" value="Cerrado" disabled
+                      style={{ background: '#f5f7fa', color: '#8a9ab0', cursor: 'not-allowed' }} />
+                    <span style={{
+                      fontSize: 11, color: '#8a9ab0', fontFamily: 'DM Sans, sans-serif',
+                      whiteSpace: 'nowrap',
+                    }}>No editable</span>
+                  </div>
+                ) : (
+                  <div className={styles.selectWrapper}>
+                    <select className={styles.select} value={id_estado}
+                      onChange={e => setIdEstado(e.target.value)}>
+                      <option value="">Seleccionar</option>
+                      {catalogos.estados?.map(e => (
+                        <option key={e.id_estado} value={e.id_estado}>{e.nombre_estado}</option>
+                      ))}
+                    </select>
+                  </div>
+                )
+              })()}
             </div>
 
             {isAdmin && (

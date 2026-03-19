@@ -487,6 +487,10 @@
     margin-top: auto;
   }
 
+  .lightboxContenido {
+    margin-top: -60vh;
+  }
+
   .twoCol {
     grid-template-columns: 1fr;
   }
