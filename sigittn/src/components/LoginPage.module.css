@@ -330,23 +330,26 @@
 @media (max-width: 640px) {
   .card {
     flex-direction: column;
-    max-width: 400px;
+    max-width: 420px;
     min-height: unset;
-    border-radius: 16px;
+    border-radius: 20px;
   }
 
   .leftPanel {
-    padding: 32px 24px 24px;
-    gap: 18px;
+    padding: 28px 24px 20px;
+    gap: 14px;
   }
 
-  .logoArrows svg {
-    width: 100px;
-    height: 73px;
+  .logoImg {
+    width: 200px;
   }
 
-  .logoMain {
-    font-size: 22px;
+  .welcomeTitle {
+    font-size: 16px;
+  }
+
+  .welcomeDesc {
+    font-size: 12px;
   }
 
   .divider {
@@ -355,19 +358,47 @@
   }
 
   .rightPanel {
-    padding: 28px 24px 36px;
+    padding: 24px 24px 36px;
   }
 
   .formTitle {
     font-size: 22px;
     margin-bottom: 24px;
   }
+
+  /* Inputs más grandes para touch */
+  .input {
+    padding: 13px 14px;
+    font-size: 16px; /* Evita zoom en iOS */
+    min-height: 48px;
+  }
+
+  .submitBtn {
+    min-height: 52px;
+    font-size: 16px;
+    width: 75%;
+  }
 }
 
 @media (max-width: 420px) {
   .wrapper {
-    padding: 16px;
+    padding: 12px;
     justify-content: flex-start;
-    padding-top: 40px;
+    padding-top: env(safe-area-inset-top, 24px);
+    padding-top: max(env(safe-area-inset-top), 24px);
+  }
+
+  .card {
+    border-radius: 16px;
+  }
+
+  /* En pantallas muy pequeñas, ocultar el panel izquierdo */
+  .leftPanel {
+    padding: 20px 20px 16px;
+    gap: 10px;
+  }
+
+  .logoImg {
+    width: 160px;
   }
 }

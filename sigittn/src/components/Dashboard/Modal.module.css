@@ -205,3 +205,39 @@
   background: #1a3a5e;
   box-shadow: 0 4px 14px rgba(15, 41, 68, 0.35);
 }
+
+/* ===== RESPONSIVE (modal usuarios) ===== */
+@media (max-width: 500px) {
+  .overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal {
+    border-radius: 20px 20px 0 0;
+    max-width: 100%;
+    animation: modalInMobileUser 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes modalInMobileUser {
+    from { opacity: 0; transform: translateY(40px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .footer {
+    padding-bottom: calc(20px + var(--safe-bottom, 0px));
+  }
+
+  .cancelBtn,
+  .submitBtn {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .input,
+  .select {
+    min-height: 44px;
+    font-size: 16px; /* Evita zoom en iOS al hacer focus */
+  }
+}

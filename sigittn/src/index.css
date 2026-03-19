@@ -27,6 +27,15 @@
   --radius-input: 10px;
   --font-primary: 'Outfit', sans-serif;
   --font-body: 'DM Sans', sans-serif;
+
+  /* PWA safe area insets */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left, 0px);
+  --safe-right:  env(safe-area-inset-right, 0px);
+
+  /* Bottom nav height (usada en múltiples componentes) */
+  --bottom-nav-h: 60px;
 }
 
 html, body {
@@ -39,13 +48,18 @@ body {
   background-color: var(--bg-dark);
   color: var(--text-primary-dark);
   min-height: 100vh;
+  /* Usa dvh si está disponible para móvil */
+  min-height: 100dvh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Evita el doble tap zoom en iOS */
+  touch-action: manipulation;
 }
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -57,3 +71,8 @@ input:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0 40px white inset;
   -webkit-text-fill-color: var(--text-primary-light);
 }
+
+/* Mejora scrollbars en móvil */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
