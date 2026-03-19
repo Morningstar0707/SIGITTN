@@ -404,104 +404,97 @@ export default function GestionTickets({ session }) {
 
       {/* ── FILTER CARD ── */}
       <div className={styles.filterCard}>
-        {/* Filtro por fecha */}
-        <div className={styles.filterGroup}>
-          <span className={styles.filterLabel}><FilterIcon /> Filtrar por fecha:</span>
-          <div className={styles.filterPills}>
-            {DATE_FILTERS.map(f => (
-              <button
-                key={f}
-                className={`${styles.datePill} ${dateFilters.includes(f) ? styles.datePillActive : ''}`}
-                onClick={() => toggleDateFilter(f)}
-              >
-                <span className={`${styles.pillCheck} ${dateFilters.includes(f) ? styles.pillCheckActive : ''}`} />
-                {f}
-              </button>
-            ))}
-            <button
-              className={`${styles.datePill} ${customFechaActivo ? styles.datePillActive : ''}`}
-              onClick={() => toggleDateFilter('Personalizado')}
-            >
-              <span className={`${styles.pillCheck} ${customFechaActivo ? styles.pillCheckActive : ''}`} />
-              Personalizado
-            </button>
-          </div>
-        </div>
+        <div className={styles.filterColumns}>
 
-        {/* Rango personalizado de fechas */}
-        {customFechaActivo && (
-          <div className={styles.filterGroup} style={{ gap: 10 }}>
-            <span className={styles.filterLabel}>Rango:</span>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <span style={{ fontSize: 11, color: '#4a5e78', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>Desde</span>
-                <input
-                  type="date"
-                  className={styles.customInput}
-                  value={fechaFiltroDesde}
-                  onChange={e => { setFechaFiltroDesde(e.target.value); setCurrentPage(1) }}
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <span style={{ fontSize: 11, color: '#4a5e78', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>Hasta</span>
-                <input
-                  type="date"
-                  className={styles.customInput}
-                  value={fechaFiltroHasta}
-                  onChange={e => { setFechaFiltroHasta(e.target.value); setCurrentPage(1) }}
-                />
-              </div>
-              {(fechaFiltroDesde || fechaFiltroHasta) && (
+          {/* ── Columna izquierda: fecha + estado ── */}
+          <div className={styles.filterColLeft}>
+            {/* Filtro por fecha */}
+            <div className={styles.filterGroup}>
+              <span className={styles.filterLabel}><FilterIcon /> Filtrar por fecha:</span>
+              <div className={styles.filterPills}>
+                {DATE_FILTERS.map(f => (
+                  <button
+                    key={f}
+                    className={`${styles.datePill} ${dateFilters.includes(f) ? styles.datePillActive : ''}`}
+                    onClick={() => toggleDateFilter(f)}
+                  >
+                    <span className={`${styles.pillCheck} ${dateFilters.includes(f) ? styles.pillCheckActive : ''}`} />
+                    {f}
+                  </button>
+                ))}
                 <button
-                  onClick={() => { setFechaFiltroDesde(''); setFechaFiltroHasta('') }}
-                  style={{
-                    marginTop: 16, padding: '5px 10px', border: '1px solid #d0dae8',
-                    borderRadius: 7, background: 'transparent', color: '#4a5e78',
-                    fontFamily: 'DM Sans, sans-serif', fontSize: 11.5, cursor: 'pointer',
-                  }}
+                  className={`${styles.datePill} ${customFechaActivo ? styles.datePillActive : ''}`}
+                  onClick={() => toggleDateFilter('Personalizado')}
                 >
-                  Limpiar
+                  <span className={`${styles.pillCheck} ${customFechaActivo ? styles.pillCheckActive : ''}`} />
+                  Personalizado
                 </button>
-              )}
+              </div>
+            </div>
+
+            {/* Rango personalizado */}
+            {customFechaActivo && (
+              <div className={styles.filterGroup} style={{ gap: 10 }}>
+                <span className={styles.filterLabel}>Rango:</span>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <span style={{ fontSize: 11, color: '#4a5e78', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>Desde</span>
+                    <input type="date" className={styles.customInput} value={fechaFiltroDesde}
+                      onChange={e => { setFechaFiltroDesde(e.target.value); setCurrentPage(1) }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <span style={{ fontSize: 11, color: '#4a5e78', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>Hasta</span>
+                    <input type="date" className={styles.customInput} value={fechaFiltroHasta}
+                      onChange={e => { setFechaFiltroHasta(e.target.value); setCurrentPage(1) }} />
+                  </div>
+                  {(fechaFiltroDesde || fechaFiltroHasta) && (
+                    <button onClick={() => { setFechaFiltroDesde(''); setFechaFiltroHasta('') }}
+                      style={{ marginTop: 16, padding: '5px 10px', border: '1px solid #d0dae8',
+                        borderRadius: 7, background: 'transparent', color: '#4a5e78',
+                        fontFamily: 'DM Sans, sans-serif', fontSize: 11.5, cursor: 'pointer' }}>
+                      Limpiar
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className={styles.filterDivider} />
+
+            {/* Filtro por estado */}
+            <div className={styles.filterGroup}>
+              <span className={styles.filterLabel}>● Filtrar por estado:</span>
+              <div className={styles.filterPills}>
+                {catalogos.estados?.map(e => {
+                  const c = STATUS_COLORS[e.nombre_estado]
+                  const active = statusFilters.includes(e.nombre_estado)
+                  return (
+                    <button key={e.id_estado}
+                      className={`${styles.statusPill} ${active ? styles.statusPillActive : ''}`}
+                      style={active && c ? { background: c.bg, border: `1px solid ${c.border}`, color: c.color } : {}}
+                      onClick={() => toggleStatusFilter(e.nombre_estado)}>
+                      {c && <span className={styles.statusDot} style={{ background: c.color }} />}
+                      {e.nombre_estado}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
-        )}
 
-        <div className={styles.filterDivider} />
+          {/* ── Separador vertical ── */}
+          <div className={styles.filterColDivider} />
 
-        {/* Filtro por estado */}
-        <div className={styles.filterGroup}>
-          <span className={styles.filterLabel}>● Filtrar por estado:</span>
-          <div className={styles.filterPills}>
-            {catalogos.estados?.map(e => {
-              const c = STATUS_COLORS[e.nombre_estado]
-              const active = statusFilters.includes(e.nombre_estado)
-              return (
-                <button
-                  key={e.id_estado}
-                  className={`${styles.statusPill} ${active ? styles.statusPillActive : ''}`}
-                  style={active && c ? { background: c.bg, border: `1px solid ${c.border}`, color: c.color } : {}}
-                  onClick={() => toggleStatusFilter(e.nombre_estado)}
-                >
-                  {c && <span className={styles.statusDot} style={{ background: c.color }} />}
-                  {e.nombre_estado}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {isAdmin && (
-          <>
-            <div className={styles.filterDivider} />
-            <div className={styles.filterGroup}>
-              <span className={styles.filterLabel}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                </svg>
-                {' '}Filtrar por usuario:
-              </span>
-              <div style={{ minWidth: 220, maxWidth: 300 }}>
+          {/* ── Columna derecha: usuario + mí ── */}
+          <div className={styles.filterColRight}>
+            {isAdmin && (
+              <div className={styles.filterGroup}>
+                <span className={styles.filterLabel}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  {' '}Filtrar por usuario:
+                </span>
                 <UsuarioSelect
                   usuarios={catalogos.usuarios || []}
                   value={usuarioFilter}
@@ -509,31 +502,28 @@ export default function GestionTickets({ session }) {
                   placeholder="Todos los usuarios"
                 />
               </div>
+            )}
+
+            {isAdmin && <div className={styles.filterDivider} />}
+
+            {/* Filtro por mí */}
+            <div className={styles.filterGroup}>
+              <span className={styles.filterLabel}>👤 Filtrar por mí:</span>
+              <div className={styles.filterPills}>
+                <button className={`${styles.miPill} ${miTicketsFilter ? styles.miPillActive : ''}`}
+                  onClick={toggleMiTickets}>
+                  <span className={`${styles.pillCheck} ${miTicketsFilter ? styles.pillCheckActive : ''}`} />
+                  Mis tickets
+                </button>
+                <button className={`${styles.asignadoPill} ${asignadosFilter ? styles.asignadoPillActive : ''}`}
+                  onClick={toggleAsignados}>
+                  <span className={`${styles.pillCheck} ${asignadosFilter ? styles.pillCheckActive : ''}`} />
+                  Asignados a mí
+                </button>
+              </div>
             </div>
-          </>
-        )}
-
-        <div className={styles.filterDivider} />
-
-        {/* Filtro por rol del usuario */}
-        <div className={styles.filterGroup}>
-          <span className={styles.filterLabel}>👤 Filtrar por mí:</span>
-          <div className={styles.filterPills}>
-            <button
-              className={`${styles.miPill} ${miTicketsFilter ? styles.miPillActive : ''}`}
-              onClick={toggleMiTickets}
-            >
-              <span className={`${styles.pillCheck} ${miTicketsFilter ? styles.pillCheckActive : ''}`} />
-              Mis tickets
-            </button>
-            <button
-              className={`${styles.asignadoPill} ${asignadosFilter ? styles.asignadoPillActive : ''}`}
-              onClick={toggleAsignados}
-            >
-              <span className={`${styles.pillCheck} ${asignadosFilter ? styles.pillCheckActive : ''}`} />
-              Asignados a mí
-            </button>
           </div>
+
         </div>
       </div>
 
