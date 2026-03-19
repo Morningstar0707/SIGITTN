@@ -79,6 +79,7 @@ export const tickets = {
     p.set('limit', limit)
     return request(`/tickets?${p}`)
   },
+  contadores()      { return request('/tickets/contadores') },
   obtener(id)       { return request(`/tickets/${id}`) },
   crear(datos)      { return request('/tickets', { method: 'POST', body: JSON.stringify(datos) }) },
   actualizar(id, datos) {
