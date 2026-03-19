@@ -10,7 +10,7 @@ const pool = new Pool({
   port:     parseInt(process.env.DB_PORT || '5432'),
   database: process.env.DB_NAME     || 'sigittn',
   user:     process.env.DB_USER     || 'postgres',
-  password: process.env.DB_PASSWORD || 'ttn2026',
+  password: process.env.DB_PASSWORD || '',
   // Máximo de conexiones simultáneas
   max: 10,
   idleTimeoutMillis: 30000,

@@ -26,15 +26,30 @@ const SELECT_TICKET = `
  * Filtros opcionales: ?id_modulo_origen=3&id_estado=1&page=1&limit=9
  */
 export async function listarTickets(req, res) {
-  const { id_modulo_origen, id_estado, page = 1, limit = 9 } = req.query
+  const { id_modulo_origen, estados, page = 1, limit = 9 } = req.query
   const offset = (parseInt(page) - 1) * parseInt(limit)
 
   const condiciones = []
   const valores = []
   let idx = 1
 
-  if (id_modulo_origen) { condiciones.push(`t.id_modulo_origen = $${idx++}`);  valores.push(id_modulo_origen) }
-  if (id_estado)        { condiciones.push(`t.id_estado = $${idx++}`);         valores.push(id_estado) }
+  if (id_modulo_origen) {
+    condiciones.push(`t.id_modulo_origen = $${idx++}`)
+    valores.push(id_modulo_origen)
+  }
+
+  // estados = "1,2,3" → filtra por múltiples estados con IN
+  if (estados) {
+    const ids = estados.split(',').map(Number).filter(n => !isNaN(n))
+    if (ids.length === 1) {
+      condiciones.push(`t.id_estado = $${idx++}`)
+      valores.push(ids[0])
+    } else if (ids.length > 1) {
+      const placeholders = ids.map(() => `$${idx++}`).join(', ')
+      condiciones.push(`t.id_estado IN (${placeholders})`)
+      valores.push(...ids)
+    }
+  }
 
   const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : ''
 
@@ -101,16 +116,18 @@ export async function crearTicket(req, res) {
   }
 
   try {
-    // Estado inicial = 'Nuevo'
+    const asignado = id_usuario_asignado ? parseInt(id_usuario_asignado) : null
+
+    // Si se asigna responsable al crear → estado 'Asignado', si no → 'Nuevo'
+    const nombreEstadoInicial = asignado ? 'Asignado' : 'Nuevo'
     const { rows: estadoRows } = await pool.query(
-      `SELECT id_estado FROM Estados_Ticket WHERE nombre_estado = 'Nuevo' LIMIT 1`
+      `SELECT id_estado FROM Estados_Ticket WHERE nombre_estado = $1 LIMIT 1`,
+      [nombreEstadoInicial]
     )
     const id_estado = estadoRows[0]?.id_estado
     if (!id_estado) {
-      return res.status(500).json({ error: 'Estado "Nuevo" no encontrado en la base de datos' })
+      return res.status(500).json({ error: `Estado "${nombreEstadoInicial}" no encontrado en la base de datos` })
     }
-
-    const asignado = id_usuario_asignado ? parseInt(id_usuario_asignado) : null
 
     const { rows } = await pool.query(
       `INSERT INTO Tickets

@@ -71,10 +71,10 @@ export const usuarios = {
 
 // TICKETS
 export const tickets = {
-  listar({ id_modulo_origen, id_estado, page = 1, limit = 9 } = {}) {
+  listar({ id_modulo_origen, estados, page = 1, limit = 9 } = {}) {
     const p = new URLSearchParams()
-    if (id_modulo_origen) p.set('id_modulo_origen', id_modulo_origen)
-    if (id_estado)        p.set('id_estado', id_estado)
+    if (id_modulo_origen)          p.set('id_modulo_origen', id_modulo_origen)
+    if (estados && estados.length) p.set('estados', estados.join(','))
     p.set('page', page)
     p.set('limit', limit)
     return request(`/tickets?${p}`)
@@ -86,6 +86,14 @@ export const tickets = {
   },
   cambiarEstado(id, id_estado) {
     return request(`/tickets/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ id_estado }) })
+  },
+}
+
+// MENSAJES NO LEÍDOS
+export const notificaciones = {
+  noLeidos() { return request('/mensajes/no-leidos') },
+  marcarTodosLeidos(ticketId) {
+    return request(`/tickets/${ticketId}/mensajes/leidos`, { method: 'PATCH' })
   },
 }
 
@@ -104,5 +112,23 @@ export const mensajes = {
   },
   marcarLeido(ticketId, idMensaje) {
     return request(`/tickets/${ticketId}/mensajes/${idMensaje}/leido`, { method: 'PATCH' })
+  },
+}
+// RESET DE CONTRASEÑA (públicos — no requieren token)
+export const resetPassword = {
+  solicitar(nombre_usuario, email) {
+    return request('/auth/solicitar-reset', {
+      method: 'POST',
+      body: JSON.stringify({ nombre_usuario, email }),
+    })
+  },
+  validarToken(token) {
+    return request(`/auth/validar-token?token=${encodeURIComponent(token)}`)
+  },
+  restablecer(token, nueva_password) {
+    return request('/auth/restablecer-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, nueva_password }),
+    })
   },
 }
