@@ -197,6 +197,56 @@
   flex-shrink: 0;
 }
 
+/* Pill "Mis tickets" */
+.miPill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid rgba(30, 111, 197, 0.4);
+  border-radius: 10px;
+  color: #1e6fc5;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.miPill:hover {
+  background: rgba(30, 111, 197, 0.07);
+}
+.miPillActive {
+  background: rgba(30, 111, 197, 0.12);
+  border-color: rgba(30, 111, 197, 0.5);
+  color: #1e6fc5;
+}
+
+/* Pill "Asignados a mí" */
+.asignadoPill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  border-radius: 10px;
+  color: #7c3aed;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.asignadoPill:hover {
+  background: rgba(124, 58, 237, 0.07);
+}
+.asignadoPillActive {
+  background: rgba(124, 58, 237, 0.12);
+  border-color: rgba(124, 58, 237, 0.5);
+  color: #7c3aed;
+}
+
 /* ===== PAGE INDICATOR ===== */
 .pageIndicator {
   display: flex;
@@ -241,6 +291,38 @@
 .ticketCard:hover {
   border-color: rgba(255,255,255,0.16);
   background: #e6e6e6;
+}
+
+/* Chip "Mi ticket" — creador */
+.miTicketBadge {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #1e6fc5;
+  background: rgba(30, 111, 197, 0.12);
+  border: 1px solid rgba(30, 111, 197, 0.3);
+  border-radius: 20px;
+  padding: 1px 7px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+/* Chip "Asignado a mí" — responsable */
+.asignadoBadge {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.12);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 20px;
+  padding: 1px 7px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-transform: uppercase;
 }
 
 .cardMain {
