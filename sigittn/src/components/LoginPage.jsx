@@ -82,10 +82,11 @@ export default function LoginPage({ onLogin, onOlvidePassword }) {
                     className={styles.input}
                     value={nombre}
                     onChange={e => setNombre(e.target.value)}
-                    onFocus={() => setFocusedField('nombre')}
+                    onFocus={e => { e.target.removeAttribute('readonly'); setFocusedField('nombre') }}
                     onBlur={() => setFocusedField(null)}
                     placeholder="Ingresa tu nombre de usuario"
                     autoComplete="username"
+                    readOnly
                     disabled={loading}
                   />
                 </div>
@@ -100,10 +101,11 @@ export default function LoginPage({ onLogin, onOlvidePassword }) {
                     className={styles.input}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    onFocus={() => setFocusedField('password')}
+                    onFocus={e => { e.target.removeAttribute('readonly'); setFocusedField('password') }}
                     onBlur={() => setFocusedField(null)}
                     placeholder="Ingresa tu contraseña"
                     autoComplete="current-password"
+                    readOnly
                     disabled={loading}
                   />
                   <button type="button" className={styles.eyeBtn}

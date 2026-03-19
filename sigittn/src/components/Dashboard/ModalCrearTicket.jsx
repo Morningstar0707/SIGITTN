@@ -33,9 +33,24 @@ export default function ModalCrearTicket({ catalogos, onClose, onCreate }) {
       })
     : (catalogos.usuarios || [])
 
+  // Al cambiar dependencia → limpiar usuario si ya no pertenece a ella
   const handleDependenciaChange = (val) => {
     setIdDependencia(val)
-    setIdResponsable('') // limpiar usuario al cambiar dependencia
+    setIdResponsable('')
+  }
+
+  // Al seleccionar usuario → autocompletar dependencia con la suya
+  const handleResponsableChange = (val) => {
+    setIdResponsable(val)
+    if (val) {
+      const usuario = (catalogos.usuarios || []).find(u => String(u.id_usuario) === String(val))
+      if (usuario?.nombre_dependencia) {
+        const dep = (catalogos.dependencias || []).find(
+          d => d.nombre_dependencia === usuario.nombre_dependencia
+        )
+        if (dep) setIdDependencia(String(dep.id_dependencia))
+      }
+    }
   }
 
   const validate = () => {
@@ -43,6 +58,17 @@ export default function ModalCrearTicket({ catalogos, onClose, onCreate }) {
     if (!titulo.trim())     e.titulo   = 'Requerido'
     if (!id_nivel_urgencia) e.urgencia = 'Requerido'
     if (!id_modulo_origen)  e.modulo   = 'Requerido'
+
+    // Si se elige uno de los dos campos de asignación, el otro también es obligatorio
+    const tieneDep  = !!id_dependencia
+    const tieneResp = !!id_responsable
+    if (tieneDep && !tieneResp) {
+      e.responsable = 'Selecciona también un usuario responsable'
+    }
+    if (tieneResp && !tieneDep) {
+      e.dependencia = 'Selecciona también una dependencia'
+    }
+
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -130,18 +156,22 @@ export default function ModalCrearTicket({ catalogos, onClose, onCreate }) {
             <div className={styles.assignBox}>
               <p className={styles.assignTitle}><WarnIcon /> Asignación personalizada</p>
               <p className={styles.assignDesc}>
-                Selecciona la dependencia y el usuario responsable de atender este ticket.
+                Si vas a asignar este ticket, selecciona <strong>tanto la dependencia como el responsable</strong>.
+                No puedes seleccionar solo uno de los dos.
               </p>
               <p className={styles.assignDesc}>
-                Si desconoces esta información, deja los campos sin seleccionar.
+                Si desconoces la dependencia, selecciona primero el usuario responsable y se completará automáticamente.
               </p>
             </div>
 
             <div className={styles.field}>
               <label className={styles.label}>Dependencia responsable</label>
               <div className={styles.selectWrapper}>
-                <select className={styles.select} value={id_dependencia}
-                  onChange={e => handleDependenciaChange(e.target.value)}>
+                <select
+                  className={`${styles.select} ${errors.dependencia ? styles.inputError : ''}`}
+                  value={id_dependencia}
+                  onChange={e => handleDependenciaChange(e.target.value)}
+                >
                   <option value="">Seleccionar</option>
                   {catalogos.dependencias?.map(d => (
                     <option key={d.id_dependencia} value={d.id_dependencia}>
@@ -150,6 +180,7 @@ export default function ModalCrearTicket({ catalogos, onClose, onCreate }) {
                   ))}
                 </select>
               </div>
+              {errors.dependencia && <span className={styles.errMsg}>{errors.dependencia}</span>}
             </div>
 
             <div className={styles.field}>
@@ -157,9 +188,11 @@ export default function ModalCrearTicket({ catalogos, onClose, onCreate }) {
               <UsuarioSelect
                 usuarios={usuariosFiltrados}
                 value={id_responsable}
-                onChange={setIdResponsable}
+                onChange={handleResponsableChange}
                 placeholder="Seleccionar responsable"
+                error={!!errors.responsable}
               />
+              {errors.responsable && <span className={styles.errMsg}>{errors.responsable}</span>}
             </div>
           </div>
         </div>

@@ -10,22 +10,21 @@ const CloseIcon = () => (
 )
 
 export default function ModalEditarTicket({ ticket, catalogos, isAdmin, onClose, onSave }) {
-  const [titulo,            setTitulo]       = useState(ticket.titulo_ticket || '')
-  const [id_modulo_origen,  setIdModulo]     = useState(String(ticket.id_modulo_origen || ''))
-  const [id_nivel_urgencia, setIdUrgencia]   = useState(ticket.id_nivel_urgencia || '')
-  const [id_estado,         setIdEstado]     = useState(ticket.id_estado || '')
-  const [descripcion,       setDescripcion]  = useState(ticket.descripcion_ticket || '')
-  const [id_asignado,       setIdAsignado]   = useState(String(ticket.id_usuario_asignado || ''))
+  const [titulo,            setTitulo]        = useState(ticket.titulo_ticket || '')
+  const [id_modulo_origen,  setIdModulo]      = useState(String(ticket.id_modulo_origen || ''))
+  const [id_nivel_urgencia, setIdUrgencia]    = useState(ticket.id_nivel_urgencia || '')
+  const [id_estado,         setIdEstado]      = useState(ticket.id_estado || '')
+  const [descripcion,       setDescripcion]   = useState(ticket.descripcion_ticket || '')
+  const [id_asignado,       setIdAsignado]    = useState(String(ticket.id_usuario_asignado || ''))
   const [id_dependencia,    setIdDependencia] = useState(() => {
-    // Pre-seleccionar dependencia del usuario actualmente asignado
     if (!ticket.id_usuario_asignado) return ''
     const usuario = (catalogos.usuarios || []).find(u => u.id_usuario === ticket.id_usuario_asignado)
     if (!usuario) return ''
     const dep = (catalogos.dependencias || []).find(d => d.nombre_dependencia === usuario.nombre_dependencia)
     return dep ? String(dep.id_dependencia) : ''
   })
-  const [errors,            setErrors]       = useState({})
-  const [loading,           setLoading]      = useState(false)
+  const [errors, setErrors] = useState({})
+  const [loading, setLoading] = useState(false)
 
   // Filtrar usuarios por dependencia seleccionada
   const usuariosFiltrados = id_dependencia
@@ -35,9 +34,24 @@ export default function ModalEditarTicket({ ticket, catalogos, isAdmin, onClose,
       })
     : (catalogos.usuarios || [])
 
+  // Al cambiar dependencia → limpiar usuario
   const handleDependenciaChange = (val) => {
     setIdDependencia(val)
-    setIdAsignado('') // limpiar usuario al cambiar dependencia
+    setIdAsignado('')
+  }
+
+  // Al seleccionar usuario → autocompletar dependencia con la suya
+  const handleAsignadoChange = (val) => {
+    setIdAsignado(val)
+    if (val) {
+      const usuario = (catalogos.usuarios || []).find(u => String(u.id_usuario) === String(val))
+      if (usuario?.nombre_dependencia) {
+        const dep = (catalogos.dependencias || []).find(
+          d => d.nombre_dependencia === usuario.nombre_dependencia
+        )
+        if (dep) setIdDependencia(String(dep.id_dependencia))
+      }
+    }
   }
 
   const validate = () => {
@@ -46,10 +60,22 @@ export default function ModalEditarTicket({ ticket, catalogos, isAdmin, onClose,
     if (!id_modulo_origen)  e.modulo   = 'Requerido'
     if (!id_nivel_urgencia) e.urgencia = 'Requerido'
 
+    // Si se llena uno de los campos de asignación, el otro también es obligatorio
+    if (isAdmin) {
+      const tieneDep  = !!id_dependencia
+      const tieneResp = !!id_asignado
+      if (tieneDep && !tieneResp) {
+        e.asignado = 'Selecciona también un usuario responsable'
+      }
+      if (tieneResp && !tieneDep) {
+        e.dependencia = 'Selecciona también una dependencia'
+      }
+    }
+
     // Si el ticket NO está en 'Nuevo', dependencia y responsable son obligatorios
     const estadoNuevo = catalogos.estados?.find(s => s.nombre_estado === 'Nuevo')
     const estaEnNuevo = parseInt(id_estado) === estadoNuevo?.id_estado
-    if (!estaEnNuevo) {
+    if (!estaEnNuevo && isAdmin) {
       if (!id_dependencia) e.dependencia = 'Requerido para tickets en este estado'
       if (!id_asignado)    e.asignado    = 'Requerido para tickets en este estado'
     }
@@ -62,13 +88,12 @@ export default function ModalEditarTicket({ ticket, catalogos, isAdmin, onClose,
     if (!validate()) return
     setLoading(true)
 
-    // Si el ticket está en 'Nuevo' y se le asigna un responsable → pasar a 'Asignado' automáticamente
+    // Si está en 'Nuevo' y se le asigna responsable → cambiar a 'Asignado' automáticamente
     const estadoNuevo    = catalogos.estados?.find(e => e.nombre_estado === 'Nuevo')
     const estadoAsignado = catalogos.estados?.find(e => e.nombre_estado === 'Asignado')
-    const estaEnNuevo     = parseInt(id_estado) === estadoNuevo?.id_estado
-    const tieneResponsable = !!id_asignado
+    const estaEnNuevo    = parseInt(id_estado) === estadoNuevo?.id_estado
 
-    const estadoFinal = (estaEnNuevo && tieneResponsable && estadoAsignado)
+    const estadoFinal = (estaEnNuevo && !!id_asignado && estadoAsignado)
       ? estadoAsignado.id_estado
       : parseInt(id_estado)
 
@@ -171,9 +196,11 @@ export default function ModalEditarTicket({ ticket, catalogos, isAdmin, onClose,
                 <div className={styles.field}>
                   <label className={styles.label}>Dependencia responsable</label>
                   <div className={styles.selectWrapper}>
-                    <select className={`${styles.select} ${errors.dependencia ? styles.inputError : ''}`}
+                    <select
+                      className={`${styles.select} ${errors.dependencia ? styles.inputError : ''}`}
                       value={id_dependencia}
-                      onChange={e => handleDependenciaChange(e.target.value)}>
+                      onChange={e => handleDependenciaChange(e.target.value)}
+                    >
                       <option value="">Todas las dependencias</option>
                       {catalogos.dependencias?.map(d => (
                         <option key={d.id_dependencia} value={d.id_dependencia}>
@@ -190,7 +217,7 @@ export default function ModalEditarTicket({ ticket, catalogos, isAdmin, onClose,
                   <UsuarioSelect
                     usuarios={usuariosFiltrados}
                     value={id_asignado}
-                    onChange={setIdAsignado}
+                    onChange={handleAsignadoChange}
                     placeholder="Sin asignar"
                     error={!!errors.asignado}
                   />

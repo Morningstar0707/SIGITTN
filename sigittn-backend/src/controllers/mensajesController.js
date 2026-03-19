@@ -22,7 +22,6 @@ async function verificarAcceso(idTicket, usuario) {
 
 /**
  * GET /api/tickets/:id/mensajes
- * Solo pueden ver los mensajes: creador, asignado, o admin.
  */
 export async function listarMensajes(req, res) {
   const { id } = req.params
@@ -58,8 +57,6 @@ export async function listarMensajes(req, res) {
 
 /**
  * POST /api/tickets/:id/mensajes
- * Solo pueden enviar mensajes: creador, asignado, o admin.
- * Body: { texto_mensaje?, url_imagen_mensaje? }
  */
 export async function crearMensaje(req, res) {
   const { id } = req.params
@@ -123,21 +120,30 @@ export async function marcarLeido(req, res) {
 
 /**
  * GET /api/mensajes/no-leidos
- * Devuelve los id_ticket que tienen mensajes no leídos para el usuario actual.
- * Un mensaje es no leído si: leido_mensaje=FALSE, no lo envié yo,
- * y soy creador o asignado del ticket.
+ *
+ * Devuelve los id_ticket que tienen mensajes nuevos para el usuario actual,
+ * comparando la fecha del último mensaje (no propio) contra su último visto
+ * en ticket_ultimo_visto.
+ *
+ * Lógica: un ticket tiene mensajes no leídos si existe al menos un mensaje
+ * de OTRO usuario cuya fecha_mensaje > mi visto_en (o si nunca lo he visto).
+ *
+ * Cada usuario tiene su propio registro → dos admins no se interfieren.
  */
 export async function noLeidos(req, res) {
   const { id_usuario, nombre_rol } = req.usuario
   try {
     let query
+
     if (nombre_rol === 'admin') {
-      // Admin ve no leídos de TODOS los tickets (puede entrar a cualquier chat)
+      // Admin: comprueba TODOS los tickets accesibles
       query = await pool.query(
         `SELECT DISTINCT m.id_ticket
          FROM Mensaje_tickets m
-         WHERE m.leido_mensaje = FALSE
-           AND m.id_usuario != $1`,
+         LEFT JOIN ticket_ultimo_visto tuv
+           ON tuv.id_ticket = m.id_ticket AND tuv.id_usuario = $1
+         WHERE m.id_usuario != $1
+           AND m.fecha_mensaje > COALESCE(tuv.visto_en, '-infinity'::timestamptz)`,
         [id_usuario]
       )
     } else {
@@ -146,12 +152,15 @@ export async function noLeidos(req, res) {
         `SELECT DISTINCT m.id_ticket
          FROM Mensaje_tickets m
          JOIN Tickets t ON t.id_ticket = m.id_ticket
-         WHERE m.leido_mensaje = FALSE
-           AND m.id_usuario != $1
-           AND (t.id_usuario_creador = $1 OR t.id_usuario_asignado = $1)`,
+         LEFT JOIN ticket_ultimo_visto tuv
+           ON tuv.id_ticket = m.id_ticket AND tuv.id_usuario = $1
+         WHERE m.id_usuario != $1
+           AND (t.id_usuario_creador = $1 OR t.id_usuario_asignado = $1)
+           AND m.fecha_mensaje > COALESCE(tuv.visto_en, '-infinity'::timestamptz)`,
         [id_usuario]
       )
     }
+
     return res.json({ ticketsConNoLeidos: query.rows.map(r => r.id_ticket) })
   } catch (err) {
     console.error('Error al obtener no leídos:', err)
@@ -161,18 +170,20 @@ export async function noLeidos(req, res) {
 
 /**
  * PATCH /api/tickets/:id/mensajes/leidos
- * Marca como leídos todos los mensajes de un ticket que no son míos.
+ *
+ * Registra que el usuario actual ya vio el chat de este ticket (NOW()).
+ * Usa UPSERT para actualizar si ya existe el registro.
+ * NO toca el campo leido_mensaje de otros usuarios → cada uno tiene su estado.
  */
 export async function marcarTodosLeidos(req, res) {
   const { id } = req.params
   const { id_usuario } = req.usuario
   try {
     await pool.query(
-      `UPDATE Mensaje_tickets
-       SET leido_mensaje = TRUE
-       WHERE id_ticket = $1
-         AND id_usuario != $2
-         AND leido_mensaje = FALSE`,
+      `INSERT INTO ticket_ultimo_visto (id_ticket, id_usuario, visto_en)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (id_ticket, id_usuario)
+       DO UPDATE SET visto_en = NOW()`,
       [id, id_usuario]
     )
     return res.json({ ok: true })
