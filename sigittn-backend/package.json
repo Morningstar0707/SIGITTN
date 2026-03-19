@@ -10,7 +10,8 @@
     "db:init": "node src/db/init.js",
     "db:migrate": "node src/db/migrate_reset_tokens.js",
     "db:modulos": "node src/db/migrate_modulos.js",
-    "db:dependencias": "node src/db/migrate_dependencias.js"
+    "db:dependencias": "node src/db/migrate_dependencias.js",
+    "db:mensajes": "node src/db/migrate_mensajes_usuario.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
