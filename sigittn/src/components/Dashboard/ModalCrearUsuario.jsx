@@ -73,6 +73,7 @@ export default function ModalCrearUsuario({ onClose, onCreate }) {
               className={`${styles.input} ${errors.nombre ? styles.inputError : ''}`}
               type="text" placeholder="Nombre completo"
               value={nombre} onChange={e => setNombre(e.target.value)}
+              autoComplete="off"
             />
             {errors.nombre && <span className={styles.errorMsg}>{errors.nombre}</span>}
           </div>
@@ -85,6 +86,7 @@ export default function ModalCrearUsuario({ onClose, onCreate }) {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Contraseña"
                 value={password} onChange={e => setPassword(e.target.value)}
+                autoComplete="new-password"
               />
               <button type="button" className={styles.eyeBtn}
                 onClick={() => setShowPassword(v => !v)} tabIndex={-1}>

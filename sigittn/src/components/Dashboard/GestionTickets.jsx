@@ -120,6 +120,8 @@ export default function GestionTickets({ session }) {
   const [moduloFilter,  setModuloFilter]  = useState('')
   const [dateFilters,   setDateFilters]   = useState([])
   const [statusFilters, setStatusFilters] = useState([])
+  const [miTicketsFilter,  setMiTicketsFilter]  = useState(false)
+  const [asignadosFilter,  setAsignadosFilter]  = useState(false)
 
   const [showCreate,      setShowCreate]      = useState(false)
   const [editTicket,      setEditTicket]      = useState(null)
@@ -174,12 +176,21 @@ export default function GestionTickets({ session }) {
 
   useEffect(() => { cargarTickets() }, [cargarTickets])
 
-  // Filtro por fecha se aplica en cliente sobre los tickets ya cargados
-  const ticketsFiltradosFecha = dateFilters.length === 0
+  // Filtro por fecha → mis tickets → asignados a mí (todos en cliente)
+  const ticketsPorFecha = dateFilters.length === 0
     ? listaTickets
     : listaTickets.filter(t =>
         dateFilters.some(f => matchDateFilter(t.fecha_creacion_ticket, f))
       )
+
+  const ticketsFiltrados = ticketsPorFecha.filter(t => {
+    const esMio      = t.id_usuario_creador  === session?.id_usuario
+    const esAsignado = t.id_usuario_asignado === session?.id_usuario
+    if (miTicketsFilter && asignadosFilter) return esMio || esAsignado
+    if (miTicketsFilter)  return esMio
+    if (asignadosFilter)  return esAsignado
+    return true
+  })
 
   const toggleDateFilter = (f) => {
     setDateFilters(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f])
@@ -191,6 +202,8 @@ export default function GestionTickets({ session }) {
     )
     setCurrentPage(1)
   }
+  const toggleMiTickets = () => { setMiTicketsFilter(v => !v); setCurrentPage(1) }
+  const toggleAsignados = () => { setAsignadosFilter(v => !v); setCurrentPage(1) }
 
   const handleCreate = async (datos) => {
     try {
@@ -297,6 +310,29 @@ export default function GestionTickets({ session }) {
             })}
           </div>
         </div>
+
+        <div className={styles.filterDivider} />
+
+        {/* Filtro por rol del usuario */}
+        <div className={styles.filterGroup}>
+          <span className={styles.filterLabel}>👤 Filtrar por mí:</span>
+          <div className={styles.filterPills}>
+            <button
+              className={`${styles.miPill} ${miTicketsFilter ? styles.miPillActive : ''}`}
+              onClick={toggleMiTickets}
+            >
+              <span className={`${styles.pillCheck} ${miTicketsFilter ? styles.pillCheckActive : ''}`} />
+              Mis tickets
+            </button>
+            <button
+              className={`${styles.asignadoPill} ${asignadosFilter ? styles.asignadoPillActive : ''}`}
+              onClick={toggleAsignados}
+            >
+              <span className={`${styles.pillCheck} ${asignadosFilter ? styles.pillCheckActive : ''}`} />
+              Asignados a mí
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* ── PAGE INDICATOR ── */}
@@ -309,12 +345,17 @@ export default function GestionTickets({ session }) {
         <div className={styles.emptyState}>Cargando tickets...</div>
       ) : error ? (
         <div className={styles.emptyState} style={{ color: '#e05c5c' }}>{error}</div>
-      ) : ticketsFiltradosFecha.length === 0 ? (
+      ) : ticketsFiltrados.length === 0 ? (
         <div className={styles.emptyState}>No se encontraron tickets.</div>
       ) : (
         <div className={styles.grid}>
-          {ticketsFiltradosFecha.map(ticket => (
-            <div key={ticket.id_ticket} className={styles.ticketCard} style={{ position: 'relative' }}>
+          {ticketsFiltrados.map(ticket => {
+            const esMio      = ticket.id_usuario_creador  === session?.id_usuario
+            const esAsignado = ticket.id_usuario_asignado === session?.id_usuario
+            return (
+            <div key={ticket.id_ticket}
+              className={styles.ticketCard}
+              style={{ position: 'relative' }}>
               {ticketsConNotif.has(ticket.id_ticket) && (
                 <span style={{
                   position: 'absolute', top: -4, right: -4,
@@ -329,6 +370,8 @@ export default function GestionTickets({ session }) {
               <div className={styles.cardMain}>
                 <div className={styles.cardTopRow}>
                   <span className={styles.ticketNum}>Ticket #{String(ticket.id_ticket).padStart(3, '0')}</span>
+                  {esMio      && <span className={styles.miTicketBadge}>Mi ticket</span>}
+                  {esAsignado && <span className={styles.asignadoBadge}>Asignado a mí</span>}
                   <span className={styles.urgencyText}>
                     Nivel de urgencia: <strong>{ticket.nombre_nivel_urgencia}</strong>
                   </span>
@@ -360,7 +403,8 @@ export default function GestionTickets({ session }) {
                 )}
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -387,7 +431,7 @@ export default function GestionTickets({ session }) {
         </div>
         <div className={styles.ticketCount}>
           <TicketIcon />
-          <span>{dateFilters.length > 0 ? ticketsFiltradosFecha.length : totalTickets} Ticket{totalTickets !== 1 ? 's' : ''}</span>
+          <span>{(dateFilters.length > 0 || miTicketsFilter || asignadosFilter) ? ticketsFiltrados.length : totalTickets} Ticket{totalTickets !== 1 ? 's' : ''}</span>
         </div>
       </div>
 
