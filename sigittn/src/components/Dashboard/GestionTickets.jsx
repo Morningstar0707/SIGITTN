@@ -697,7 +697,7 @@ export default function GestionTickets({ session }) {
                   onClick={() => abrirNovedades(ticket)}>
                   <ChatIcon />
                 </button>
-                {isAdmin && (
+                {isAdmin && ticket.nombre_estado !== 'Cerrado' && (
                   <button className={styles.actionBtn} title="Editar"
                     onClick={() => setEditTicket(ticket)}>
                     <EditIcon />

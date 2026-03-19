@@ -187,7 +187,7 @@ export async function actualizarTicket(req, res) {
       const { rows: estadoRows } = await pool.query(
         'SELECT nombre_estado FROM Estados_Ticket WHERE id_estado = $1', [id_estado]
       )
-      if (estadoRows[0]?.nombre_estado === 'Cerrado') {
+      if (['Cerrado', 'Resuelto'].includes(estadoRows[0]?.nombre_estado)) {
         campos.push(`fecha_cierre_ticket = NOW()`)
       }
     }
@@ -232,11 +232,11 @@ export async function cambiarEstado(req, res) {
     )
     if (!estadoRows[0]) return res.status(400).json({ error: 'Estado no válido' })
 
-    const esCerrado = estadoRows[0].nombre_estado === 'Cerrado'
+    const requiereCierre = ['Cerrado', 'Resuelto'].includes(estadoRows[0].nombre_estado)
 
     const { rows } = await pool.query(
       `UPDATE Tickets
-       SET id_estado = $1 ${esCerrado ? ', fecha_cierre_ticket = NOW()' : ''}
+       SET id_estado = $1 ${requiereCierre ? ', fecha_cierre_ticket = NOW()' : ''}
        WHERE id_ticket = $2
        RETURNING id_ticket, id_estado, fecha_cierre_ticket`,
       [id_estado, id]
