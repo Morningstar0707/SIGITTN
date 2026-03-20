@@ -400,8 +400,9 @@
 
 .chatImg {
   width: 220px;
-  height: 180px;
-  object-fit: cover;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
   border-radius: 8px;
   display: block;
   cursor: pointer;
@@ -519,6 +520,6 @@
 
   .chatImg {
     width: 180px;
-    height: 140px;
+    height: auto;
   }
 }
