@@ -61,7 +61,7 @@ const STATUS_COLORS = {
   'Asignado':    { bg: 'rgba(168,85,247,0.15)',  border: 'rgba(168,85,247,0.35)', color: '#8000ff' },
   'En progreso': { bg: 'rgba(249,115,22,0.15)',  border: 'rgba(249,115,22,0.35)', color: '#ff7300' },
   'Resuelto':    { bg: 'rgba(34,197,94,0.15)',   border: 'rgba(34,197,94,0.35)',  color: '#009c39' },
-  'Cerrado':     { bg: 'rgba(156,163,175,0.15)', border: 'rgba(156,163,175,0.35)',color: '#5f5f5f' },
+  'Cerrado':     { bg: 'rgba(20, 20, 20, 0.18)', border: 'rgba(156,163,175,0.35)',color: '#5f5f5f' },
 }
 
 const DATE_FILTERS = ['Hoy', 'Esta semana', 'Este mes', 'Este año']
