@@ -5,11 +5,12 @@ import SolicitarReset from './components/SolicitarReset'
 import RestablecerPassword from './components/RestablecerPassword'
 import { ToastContainer, useToast } from './components/Toast'
 import { auth } from './api'
+import { setupPushNotifications, teardownPushNotifications } from './notifications'
 
 function getPantalla() {
-  const path = window.location.pathname
+  const path   = window.location.pathname
   const params = new URLSearchParams(window.location.search)
-  const token = params.get('token')
+  const token  = params.get('token')
   if (path === '/reset-password' && token) return { pantalla: 'restablecer', token }
   return { pantalla: 'login', token: null }
 }
@@ -27,7 +28,10 @@ export default function App() {
     const usuarioLocal = auth.getUsuarioLocal()
     if (usuarioLocal) {
       auth.me()
-        .then(u => setSession(u))
+        .then(u => {
+          setSession(u)
+          // ← esto ya debe estar, si no agrégalo
+        })
         .catch(() => auth.logout())
         .finally(() => setCargando(false))
     } else {
@@ -45,15 +49,37 @@ export default function App() {
     return () => window.removeEventListener('sigittn:logout', handler)
   }, [mostrarToast])
 
-  const handleLogin = (usuario) => {
+  const handleLogin = async (usuario) => {
     setSession(usuario)
-    mostrarToast('exito', `¡Bienvenido, ${usuario.nombre_usuario}!`,
-      usuario.nombre_rol === 'admin' ? 'Administrador' : 'Usuario')
+    mostrarToast(
+      'exito',
+      `¡Bienvenido, ${usuario.nombre_usuario}!`,
+      usuario.nombre_rol === 'admin' ? 'Administrador' : 'Usuario'
+    )
+
+    // Solicitar permiso y registrar suscripción push
+    const token = localStorage.getItem('sigittn_token')
+    if (token) {
+      const resultado = await setupPushNotifications(token)
+      if (resultado === 'denied') {
+        // Informamos sutilmente, sin bloquear el flujo
+        setTimeout(() => {
+          mostrarToast(
+            'info',
+            'Notificaciones desactivadas',
+            'Puedes activarlas desde la configuración del navegador'
+          )
+        }, 1500)
+      }
+    }
   }
 
-  const handleLogout = (nombre) => {
+  const handleLogout = async (nombre) => {
+    // Des-suscribir push ANTES de borrar el token
+    const token = localStorage.getItem('sigittn_token')
+    await teardownPushNotifications(token)
+
     mostrarToast('salida', 'Sesión cerrada', `Hasta pronto, ${nombre}`)
-    // Pequeño delay para que el toast sea visible antes de limpiar la sesión
     setTimeout(() => {
       auth.logout()
       setSession(null)
@@ -80,7 +106,6 @@ export default function App() {
 
   return (
     <>
-      {/* Pantalla activa */}
       {pantalla === 'restablecer' && tokenReset ? (
         <RestablecerPassword token={tokenReset} onVolver={irAlLogin} />
       ) : pantalla === 'solicitar' ? (
@@ -97,7 +122,6 @@ export default function App() {
         />
       )}
 
-      {/* Toasts — siempre visibles encima de todo */}
       <ToastContainer toasts={toasts} onRemove={removerToast} />
     </>
   )

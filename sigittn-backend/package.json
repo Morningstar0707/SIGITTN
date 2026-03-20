@@ -12,7 +12,9 @@
     "db:modulos": "node src/db/migrate_modulos.js",
     "db:dependencias": "node src/db/migrate_dependencias.js",
     "db:mensajes": "node src/db/migrate_mensajes_usuario.js",
-    "db:ultimo-visto": "node src/db/migrate_ultimo_visto.js"
+    "db:ultimo-visto": "node src/db/migrate_ultimo_visto.js",
+    "db:push": "node src/db/migrate_push_subscriptions.js",
+    "vapid:generar": "node -e \"import('web-push').then(m => { const k = m.default.generateVAPIDKeys(); console.log('VAPID_PUBLIC_KEY=' + k.publicKey); console.log('VAPID_PRIVATE_KEY=' + k.privateKey); })\""
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -21,6 +23,7 @@
     "express": "^4.18.3",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.3",
-    "nodemailer": "^6.9.13"
+    "nodemailer": "^6.9.13",
+    "web-push": "^3.6.7"
   }
 }

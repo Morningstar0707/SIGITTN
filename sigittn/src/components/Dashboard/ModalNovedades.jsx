@@ -379,24 +379,19 @@ export default function ModalNovedades({ ticket, session, onClose }) {
                                   }}
                                 />
                               ) : (
-                                /* Imagen */
-                                <div style={{ position: 'relative', cursor: 'pointer' }}
-                                  onClick={() => setImagenExpandida(msg.url_imagen_mensaje)}>
-                                  <img
-                                    src={msg.url_imagen_mensaje}
-                                    alt="evidencia"
-                                    className={styles.chatImg}
-                                  />
-                                  <div style={{
-                                    position: 'absolute', inset: 0, borderRadius: 6,
-                                    background: 'rgba(0,0,0,0)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    transition: 'background 0.2s',
+                                /* Imagen — pantalla completa nativa al hacer clic */
+                                <img
+                                  src={msg.url_imagen_mensaje}
+                                  alt="evidencia"
+                                  className={styles.chatImg}
+                                  onClick={e => {
+                                    if (e.currentTarget.requestFullscreen) {
+                                      e.currentTarget.requestFullscreen()
+                                    } else if (e.currentTarget.webkitRequestFullscreen) {
+                                      e.currentTarget.webkitRequestFullscreen()
+                                    }
                                   }}
-                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.3)'}
-                                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0)'}
-                                  />
-                                </div>
+                                />
                               )}
                               <div style={{
                                 display: 'flex', justifyContent: 'flex-end',
