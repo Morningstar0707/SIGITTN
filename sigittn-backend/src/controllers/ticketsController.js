@@ -1,4 +1,5 @@
 import pool from '../config/db.js'
+import { notificarUsuarios, getAdminIds } from '../utils/sendPush.js'
 
 // JOIN completo para devolver nombres en vez de solo IDs
 const SELECT_TICKET = `
@@ -104,6 +105,9 @@ export async function obtenerTicket(req, res) {
  * Body: { titulo_ticket, descripcion_ticket, id_modulo_origen, id_nivel_urgencia }
  * El estado inicial es siempre 'Nuevo' (id_estado = 1).
  * El creador se toma del token JWT.
+ *
+ * 🔔 Push: notifica a todos los admins cuando se crea el ticket.
+ *          Si viene con asignado, notifica también al usuario asignado.
  */
 export async function crearTicket(req, res) {
   const {
@@ -111,7 +115,7 @@ export async function crearTicket(req, res) {
     descripcion_ticket = '',
     id_modulo_origen,
     id_nivel_urgencia,
-    id_usuario_asignado,   // opcional — cualquier rol puede asignarlo al crear
+    id_usuario_asignado,
   } = req.body
 
   if (!titulo_ticket || !id_modulo_origen || !id_nivel_urgencia) {
@@ -123,7 +127,6 @@ export async function crearTicket(req, res) {
   try {
     const asignado = id_usuario_asignado ? parseInt(id_usuario_asignado) : null
 
-    // Si se asigna responsable al crear → estado 'Asignado', si no → 'Nuevo'
     const nombreEstadoInicial = asignado ? 'Asignado' : 'Nuevo'
     const { rows: estadoRows } = await pool.query(
       `SELECT id_estado FROM Estados_Ticket WHERE nombre_estado = $1 LIMIT 1`,
@@ -146,7 +149,41 @@ export async function crearTicket(req, res) {
     const { rows: full } = await pool.query(
       `${SELECT_TICKET} WHERE t.id_ticket = $1`, [rows[0].id_ticket]
     )
-    return res.status(201).json({ ticket: full[0] })
+    const ticket = full[0]
+
+    // ── Notificaciones push (no bloquean la respuesta) ──────────────────
+    setTimeout(async () => {
+      try {
+        const adminIds = await getAdminIds()
+        const creadorNombre = req.usuario.nombre_usuario
+
+        // 1) Notificar a todos los admins (excepto si el creador es admin)
+        const adminsANotificar = adminIds.filter(id => id !== req.usuario.id_usuario)
+        if (adminsANotificar.length) {
+          await notificarUsuarios(adminsANotificar, {
+            title: '🎫 Nuevo ticket creado',
+            body:  `"${titulo_ticket}" — por ${creadorNombre}`,
+            url:   '/',
+            tag:   `ticket-nuevo-${ticket.id_ticket}`,
+          })
+        }
+
+        // 2) Si hay asignado, notificarlo (puede ser el mismo admin → evitar duplicado)
+        if (asignado && asignado !== req.usuario.id_usuario && !adminIds.includes(asignado)) {
+          await notificarUsuarios([asignado], {
+            title: '📋 Te asignaron un ticket',
+            body:  `"${titulo_ticket}" fue asignado a ti`,
+            url:   '/',
+            tag:   `ticket-asignado-${ticket.id_ticket}`,
+          })
+        }
+      } catch (err) {
+        console.error('Error en notificación push (crearTicket):', err.message)
+      }
+    }, 0)
+    // ────────────────────────────────────────────────────────────────────
+
+    return res.status(201).json({ ticket })
   } catch (err) {
     console.error('Error al crear ticket:', err)
     return res.status(500).json({ error: 'Error interno del servidor' })
@@ -156,6 +193,8 @@ export async function crearTicket(req, res) {
 /**
  * PUT /api/tickets/:id
  * Cualquier campo editable. Solo admin puede asignar usuario.
+ *
+ * 🔔 Push: si cambia el id_usuario_asignado, notifica al nuevo asignado.
  */
 export async function actualizarTicket(req, res) {
   const { id } = req.params
@@ -168,9 +207,11 @@ export async function actualizarTicket(req, res) {
 
   try {
     const { rows: existing } = await pool.query(
-      'SELECT id_ticket FROM Tickets WHERE id_ticket = $1', [id]
+      'SELECT id_ticket, id_usuario_asignado, titulo_ticket FROM Tickets WHERE id_ticket = $1', [id]
     )
     if (!existing[0]) return res.status(404).json({ error: 'Ticket no encontrado' })
+
+    const asignadoAnterior = existing[0].id_usuario_asignado
 
     const campos = []
     const valores = []
@@ -183,7 +224,6 @@ export async function actualizarTicket(req, res) {
     if (id_estado !== undefined) {
       campos.push(`id_estado = $${idx++}`)
       valores.push(id_estado)
-      // Si el estado es 'Cerrado', registrar fecha de cierre
       const { rows: estadoRows } = await pool.query(
         'SELECT nombre_estado FROM Estados_Ticket WHERE id_estado = $1', [id_estado]
       )
@@ -191,10 +231,12 @@ export async function actualizarTicket(req, res) {
         campos.push(`fecha_cierre_ticket = NOW()`)
       }
     }
-    // Solo admin puede asignar responsable
+
+    let nuevoAsignado = null
     if (esAdmin && id_usuario_asignado !== undefined) {
       campos.push(`id_usuario_asignado = $${idx++}`)
       valores.push(id_usuario_asignado)
+      nuevoAsignado = id_usuario_asignado ? parseInt(id_usuario_asignado) : null
     }
 
     if (campos.length === 0) return res.status(400).json({ error: 'No hay campos para actualizar' })
@@ -207,7 +249,26 @@ export async function actualizarTicket(req, res) {
     const { rows: full } = await pool.query(
       `${SELECT_TICKET} WHERE t.id_ticket = $1`, [id]
     )
-    return res.json({ ticket: full[0] })
+    const ticket = full[0]
+
+    // ── Notificación push si cambió el asignado ──────────────────────────
+    if (nuevoAsignado && nuevoAsignado !== asignadoAnterior) {
+      setTimeout(async () => {
+        try {
+          await notificarUsuarios([nuevoAsignado], {
+            title: '📋 Te asignaron un ticket',
+            body:  `"${ticket.titulo_ticket}" fue asignado a ti`,
+            url:   '/',
+            tag:   `ticket-asignado-${id}`,
+          })
+        } catch (err) {
+          console.error('Error en notificación push (actualizarTicket):', err.message)
+        }
+      }, 0)
+    }
+    // ────────────────────────────────────────────────────────────────────
+
+    return res.json({ ticket })
   } catch (err) {
     console.error('Error al actualizar ticket:', err)
     return res.status(500).json({ error: 'Error interno del servidor' })
@@ -216,8 +277,6 @@ export async function actualizarTicket(req, res) {
 
 /**
  * PATCH /api/tickets/:id/estado
- * Atajo rápido para cambiar solo el estado.
- * Body: { id_estado }
  */
 export async function cambiarEstado(req, res) {
   const { id } = req.params
@@ -226,7 +285,6 @@ export async function cambiarEstado(req, res) {
   if (!id_estado) return res.status(400).json({ error: 'id_estado es requerido' })
 
   try {
-    // Verificar que el estado existe
     const { rows: estadoRows } = await pool.query(
       'SELECT nombre_estado FROM Estados_Ticket WHERE id_estado = $1', [id_estado]
     )
@@ -254,10 +312,9 @@ export async function cambiarEstado(req, res) {
     return res.status(500).json({ error: 'Error interno del servidor' })
   }
 }
+
 /**
  * GET /api/tickets/contadores
- * Devuelve cuántos tickets no cerrados creó el usuario actual
- * y cuántos le fueron asignados.
  */
 export async function contadoresUsuario(req, res) {
   const { id_usuario } = req.usuario
@@ -285,11 +342,9 @@ export async function contadoresUsuario(req, res) {
     return res.status(500).json({ error: 'Error interno del servidor' })
   }
 }
+
 /**
- * GET /api/tickets/metricas-usuario
- * Solo admin. Calcula tiempo promedio de resolución de tickets
- * creados o asignados a un usuario en un rango de fechas.
- * Query: id_usuario, desde, hasta (ISO dates)
+ * GET /api/tickets/metricas
  */
 export async function metricasUsuario(req, res) {
   const { id_usuario, desde, hasta } = req.query
@@ -307,18 +362,11 @@ export async function metricasUsuario(req, res) {
     const valores = [parseInt(id_usuario)]
     let idx = 2
 
-    if (desde) {
-      condiciones.push(`t.fecha_cierre_ticket >= $${idx++}`)
-      valores.push(desde)
-    }
-    if (hasta) {
-      condiciones.push(`t.fecha_cierre_ticket <= $${idx++}`)
-      valores.push(hasta)
-    }
+    if (desde) { condiciones.push(`t.fecha_cierre_ticket >= $${idx++}`); valores.push(desde) }
+    if (hasta)  { condiciones.push(`t.fecha_cierre_ticket <= $${idx++}`); valores.push(hasta) }
 
     const where = `WHERE ${condiciones.join(' AND ')}`
 
-    // Query principal: totales, promedios y distribución
     const { rows } = await pool.query(
       `SELECT
          COUNT(*)                                                        AS total_resueltos,
@@ -335,30 +383,22 @@ export async function metricasUsuario(req, res) {
       valores
     )
 
-    // Ticket más rápido
     const { rows: minRows } = await pool.query(
       `SELECT t.id_ticket,
          EXTRACT(EPOCH FROM (t.fecha_cierre_ticket - t.fecha_creacion_ticket)) / 3600 AS horas
        FROM Tickets t
        JOIN Estados_Ticket e ON e.id_estado = t.id_estado
        JOIN Nivel_urgencia_tickets n ON n.id_nivel_urgencia = t.id_nivel_urgencia
-       ${where}
-       ORDER BY horas ASC
-       LIMIT 1`,
-      valores
+       ${where} ORDER BY horas ASC LIMIT 1`, valores
     )
 
-    // Ticket más lento
     const { rows: maxRows } = await pool.query(
       `SELECT t.id_ticket,
          EXTRACT(EPOCH FROM (t.fecha_cierre_ticket - t.fecha_creacion_ticket)) / 3600 AS horas
        FROM Tickets t
        JOIN Estados_Ticket e ON e.id_estado = t.id_estado
        JOIN Nivel_urgencia_tickets n ON n.id_nivel_urgencia = t.id_nivel_urgencia
-       ${where}
-       ORDER BY horas DESC
-       LIMIT 1`,
-      valores
+       ${where} ORDER BY horas DESC LIMIT 1`, valores
     )
 
     const r      = rows[0]
