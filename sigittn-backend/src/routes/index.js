@@ -5,6 +5,7 @@ import { buscarUsuarios, listarUsuarios, crearUsuario, actualizarUsuario }  from
 import { listarTickets, obtenerTicket, crearTicket, actualizarTicket, cambiarEstado, contadoresUsuario, metricasUsuario } from '../controllers/ticketsController.js'
 import { listarMensajes, crearMensaje, marcarLeido, noLeidos, marcarTodosLeidos } from '../controllers/mensajesController.js'
 import { obtenerCatalogos }                                                 from '../controllers/catalogosController.js'
+import { getVapidPublicKey, suscribir, desuscribir }                       from '../controllers/pushController.js'
 import { verificarToken, soloAdmin }                                        from '../middleware/auth.js'
 
 const router = Router()
@@ -22,7 +23,7 @@ router.get('/auth/validar-token',         validarToken)
 router.get('/catalogos', verificarToken, obtenerCatalogos)
 
 // USUARIOS (solo admin)
-router.get('/usuarios/buscar', verificarToken, soloAdmin, buscarUsuarios)  // ← búsqueda por nombre
+router.get('/usuarios/buscar', verificarToken, soloAdmin, buscarUsuarios)
 router.get('/usuarios',        verificarToken, soloAdmin, listarUsuarios)
 router.post('/usuarios',       verificarToken, soloAdmin, crearUsuario)
 router.put('/usuarios/:id',    verificarToken, soloAdmin, actualizarUsuario)
@@ -42,5 +43,10 @@ router.get('/tickets/:id/mensajes',                    verificarToken, listarMen
 router.post('/tickets/:id/mensajes',                   verificarToken, crearMensaje)
 router.patch('/tickets/:id/mensajes/leidos',            verificarToken, marcarTodosLeidos)
 router.patch('/tickets/:id/mensajes/:idMensaje/leido', verificarToken, marcarLeido)
+
+// PUSH NOTIFICATIONS
+router.get('/push/vapid-public-key',  getVapidPublicKey)          // pública — no requiere token
+router.post('/push/suscribir',        verificarToken, suscribir)
+router.post('/push/desuscribir',      verificarToken, desuscribir)
 
 export default router

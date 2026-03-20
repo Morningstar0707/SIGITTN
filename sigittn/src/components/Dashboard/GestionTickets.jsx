@@ -61,7 +61,7 @@ const STATUS_COLORS = {
   'Asignado':    { bg: 'rgba(168,85,247,0.15)',  border: 'rgba(168,85,247,0.35)', color: '#8000ff' },
   'En progreso': { bg: 'rgba(249,115,22,0.15)',  border: 'rgba(249,115,22,0.35)', color: '#ff7300' },
   'Resuelto':    { bg: 'rgba(34,197,94,0.15)',   border: 'rgba(34,197,94,0.35)',  color: '#009c39' },
-  'Cerrado':     { bg: 'rgba(156,163,175,0.15)', border: 'rgba(156,163,175,0.35)',color: '#5f5f5f' },
+  'Cerrado':     { bg: 'rgba(20, 20, 20, 0.18)', border: 'rgba(156,163,175,0.35)',color: '#5f5f5f' },
 }
 
 const DATE_FILTERS = ['Hoy', 'Esta semana', 'Este mes', 'Este año']
@@ -94,7 +94,6 @@ function formatHora(iso) {
   return new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
 }
 
-// Calcula si una fecha ISO cae dentro de un filtro de fecha
 function matchDateFilter(isoDate, filter, desde, hasta) {
   if (!isoDate) return false
   const d     = new Date(isoDate)
@@ -165,12 +164,13 @@ export default function GestionTickets({ session }) {
   }, [])
 
   // Contadores del usuario (tickets no cerrados)
-  const fetchContadores = () => {
+  const fetchContadores = useCallback(() => {
     ticketsAPI.contadores()
       .then(data => setContadores(data))
       .catch(() => {})
-  }
-  useEffect(() => { fetchContadores() }, [])
+  }, [])
+
+  useEffect(() => { fetchContadores() }, [fetchContadores])
 
   // Calcular fechas según periodo
   function getRangoFechas(periodo) {
@@ -214,15 +214,16 @@ export default function GestionTickets({ session }) {
   }, [])
 
   // Cargar tickets desde backend al cambiar filtros de módulo/estado/página
-  const cargarTickets = useCallback(() => {
-    setCargando(true)
-    setError('')
+  const cargarTickets = useCallback((silencioso = false) => {
+    if (!silencioso) {
+      setCargando(true)
+      setError('')
+    }
 
-    // Convertir nombres de estado a IDs para enviar al backend
     const estadosIds = statusFilters.length > 0
       ? statusFilters
-          .map(nombre => catalogos.estados?.find(e => e.nombre_estado === nombre)?.id_estado)
-          .filter(Boolean)
+        .map(nombre => catalogos.estados?.find(e => e.nombre_estado === nombre)?.id_estado)
+        .filter(Boolean)
       : undefined
 
     ticketsAPI.listar({
@@ -232,17 +233,35 @@ export default function GestionTickets({ session }) {
       page: currentPage,
     })
       .then(data => {
-        setListaTickets(data.tickets)
+        // Solo actualiza si los datos realmente cambiaron
+        setListaTickets(prev => {
+          const prevIds = prev.map(t => `${t.id_ticket}-${t.id_estado}-${t.id_usuario_asignado}`).join(',')
+          const newIds = data.tickets.map(t => `${t.id_ticket}-${t.id_estado}-${t.id_usuario_asignado}`).join(',')
+          return prevIds === newIds ? prev : data.tickets
+        })
         setTotalPages(data.pages)
         setTotalTickets(data.total)
       })
-      .catch(err => setError(err.message))
-      .finally(() => setCargando(false))
+      .catch(err => { if (!silencioso) setError(err.message) })
+      .finally(() => { if (!silencioso) setCargando(false) })
   }, [moduloFilter, statusFilters, currentPage, catalogos.estados, usuarioFilter])
 
   useEffect(() => { cargarTickets() }, [cargarTickets])
 
-  // Filtro por fecha → mis tickets → asignados a mí (todos en cliente)
+  // ── Auto-refresh silencioso cada 30 segundos ──────────────────
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const hayModalAbierto = showCreate || editTicket || infoTicket || novedadesTicket
+      if (!hayModalAbierto) {
+        cargarTickets(true)   // ← silencioso = true, sin spinner ni scroll
+        fetchContadores()
+      }
+    }, 10000)
+    return () => clearInterval(interval)
+  }, [cargarTickets, fetchContadores, showCreate, editTicket, infoTicket, novedadesTicket])
+  // ─────────────────────────────────────────────────────────────
+
+  // Filtros en cliente
   const ticketsPorFecha = (dateFilters.length === 0 && !customFechaActivo)
     ? listaTickets
     : listaTickets.filter(t => {
@@ -318,13 +337,11 @@ export default function GestionTickets({ session }) {
 
   const abrirNovedades = (ticket) => {
     setNovedadesTicket(ticket)
-    // Quitar la bolita al abrir
     setTicketsConNotif(prev => {
       const next = new Set(prev)
       next.delete(ticket.id_ticket)
       return next
     })
-    // Marcar como leídos en el backend
     notifAPI.marcarTodosLeidos(ticket.id_ticket).catch(() => {})
   }
 
@@ -406,9 +423,7 @@ export default function GestionTickets({ session }) {
       <div className={styles.filterCard}>
         <div className={styles.filterColumns}>
 
-          {/* ── Columna izquierda: fecha + estado ── */}
           <div className={styles.filterColLeft}>
-            {/* Filtro por fecha */}
             <div className={styles.filterGroup}>
               <span className={styles.filterLabel}><FilterIcon /> Filtrar por fecha:</span>
               <div className={styles.filterPills}>
@@ -432,7 +447,6 @@ export default function GestionTickets({ session }) {
               </div>
             </div>
 
-            {/* Rango personalizado */}
             {customFechaActivo && (
               <div className={styles.filterGroup} style={{ gap: 10 }}>
                 <span className={styles.filterLabel}>Rango:</span>
@@ -461,7 +475,6 @@ export default function GestionTickets({ session }) {
 
             <div className={styles.filterDivider} />
 
-            {/* Filtro por estado */}
             <div className={styles.filterGroup}>
               <span className={styles.filterLabel}>● Filtrar por estado:</span>
               <div className={styles.filterPills}>
@@ -482,10 +495,8 @@ export default function GestionTickets({ session }) {
             </div>
           </div>
 
-          {/* ── Separador vertical ── */}
           <div className={styles.filterColDivider} />
 
-          {/* ── Columna derecha: usuario + mí ── */}
           <div className={styles.filterColRight}>
             {isAdmin && (
               <div className={styles.filterGroup}>
@@ -506,7 +517,6 @@ export default function GestionTickets({ session }) {
 
             {isAdmin && <div className={styles.filterDivider} />}
 
-            {/* Filtro por mí */}
             <div className={styles.filterGroup}>
               <span className={styles.filterLabel}>👤 Filtrar por mí:</span>
               <div className={styles.filterPills}>
@@ -527,11 +537,9 @@ export default function GestionTickets({ session }) {
         </div>
       </div>
 
-
       {/* ── PANEL DE MÉTRICAS (solo admin con usuario seleccionado) ── */}
       {isAdmin && usuarioFilter && (
         <div className={styles.metricasPanel}>
-          {/* Header */}
           <div className={styles.metricasHeader}>
             <div>
               <p className={styles.metricasTitle}>
@@ -542,7 +550,6 @@ export default function GestionTickets({ session }) {
               </p>
               <p className={styles.metricasSubtitle}>Tiempo promedio de resolución de tickets</p>
             </div>
-            {/* Selector de período */}
             <div className={styles.metricasPeriodos}>
               {[
                 { key: 'hoy',    label: 'Hoy' },
@@ -562,7 +569,6 @@ export default function GestionTickets({ session }) {
             </div>
           </div>
 
-          {/* Rango personalizado */}
           {periodoMetricas === 'custom' && (
             <div className={styles.customRango}>
               <div className={styles.customField}>
@@ -578,7 +584,6 @@ export default function GestionTickets({ session }) {
             </div>
           )}
 
-          {/* Indicadores */}
           {cargandoMetricas ? (
             <p className={styles.metricasCargando}>Calculando métricas...</p>
           ) : metricas && metricas.total_resueltos > 0 ? (
@@ -609,8 +614,6 @@ export default function GestionTickets({ session }) {
                   </p>
                 )}
               </div>
-
-              {/* Distribución por urgencia */}
               <div className={styles.metricaCardWide}>
                 <p className={styles.metricaLabel} style={{ marginBottom: 8 }}>Distribución por urgencia</p>
                 <div className={styles.urgenciaBar}>

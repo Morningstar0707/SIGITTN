@@ -3,6 +3,7 @@ import styles from './Layout.module.css'
 import logoImg from '../../assets/logo.jpg'
 import GestionUsuarios from './GestionUsuarios'
 import GestionTickets from './GestionTickets'
+import NotificationToggle from './NotificationToggle'
 
 const UsersIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -33,6 +34,12 @@ const LogoutIcon = () => (
     <line x1="21" y1="12" x2="9" y2="12"/>
   </svg>
 )
+const BellIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+  </svg>
+)
 
 const NAV_ITEMS = [
   { id: 'usuarios', label: 'Usuarios',  icon: <UsersIcon />,  adminOnly: true },
@@ -43,11 +50,12 @@ export default function DashboardLayout({ session, onLogout }) {
   const isAdmin    = session.nombre_rol === 'admin'
   const visibleNav = NAV_ITEMS.filter(item => !item.adminOnly || isAdmin)
   const [activeNav, setActiveNav] = useState(isAdmin ? 'usuarios' : 'tickets')
+  const [showNotifPanel, setShowNotifPanel] = useState(false)
 
   return (
     <div className={styles.shell}>
 
-      {/* SIDEBAR (desktop) */}
+      {/* ── SIDEBAR (desktop) ── */}
       <aside className={styles.sidebar}>
         <div className={styles.sidebarLogo}>
           <img src={logoImg} alt="El Terminal Neiva" className={styles.logoImg} />
@@ -63,13 +71,21 @@ export default function DashboardLayout({ session, onLogout }) {
               onClick={() => setActiveNav(item.id)}
             >
               <span className={styles.navIcon}>{item.icon}</span>
-              <span className={styles.navLabel}>{item.label === 'Usuarios' ? 'Gestionar usuarios' : 'Gestionar tickets'}</span>
+              <span className={styles.navLabel}>
+                {item.label === 'Usuarios' ? 'Gestionar usuarios' : 'Gestionar tickets'}
+              </span>
             </button>
           ))}
         </nav>
 
         <div className={styles.sidebarBottom}>
           <div className={styles.sidebarDivider} />
+
+          {/* ── Toggle de notificaciones ── */}
+          <div style={{ padding: '0 8px 6px' }}>
+            <NotificationToggle />
+          </div>
+
           <div className={styles.userInfo}>
             <div className={styles.userAvatar}><AvatarIcon /></div>
             <div className={styles.userDetails}>
@@ -86,13 +102,13 @@ export default function DashboardLayout({ session, onLogout }) {
         </div>
       </aside>
 
-      {/* MAIN */}
+      {/* ── MAIN ── */}
       <main className={styles.main}>
         {activeNav === 'usuarios' && isAdmin && <GestionUsuarios />}
         {activeNav === 'tickets'  && <GestionTickets session={session} />}
       </main>
 
-      {/* BOTTOM NAV (solo móvil) */}
+      {/* ── BOTTOM NAV (solo móvil) ── */}
       <nav className={styles.bottomNav}>
         {visibleNav.map(item => (
           <button
@@ -105,6 +121,57 @@ export default function DashboardLayout({ session, onLogout }) {
             {activeNav === item.id && <span className={styles.bottomNavDot} />}
           </button>
         ))}
+
+        {/* Botón de notificaciones en bottom nav móvil */}
+        <button
+          className={styles.bottomNavItem}
+          onClick={() => setShowNotifPanel(prev => !prev)}
+          title="Notificaciones push"
+          style={{ position: 'relative' }}
+        >
+          <BellIcon />
+          <span>Alertas</span>
+        </button>
+
+        {/* Panel flotante de notificaciones en móvil */}
+        {showNotifPanel && (
+          <div style={{
+            position:  'fixed',
+            bottom:    'calc(var(--bottom-nav-h) + var(--safe-bottom, 0px) + 8px)',
+            right:     12,
+            background: '#ffffff',
+            borderRadius: 12,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+            padding:   '12px 14px',
+            zIndex:    200,
+            minWidth:  220,
+            border:    '1px solid rgba(0,0,0,0.07)',
+          }}>
+            <p style={{
+              fontFamily: 'DM Sans, sans-serif',
+              fontSize: 11,
+              color: '#6b7f97',
+              margin: '0 0 8px',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}>
+              Notificaciones push
+            </p>
+            <NotificationToggle />
+          </div>
+        )}
+
+        {/* Overlay para cerrar el panel al tocar fuera */}
+        {showNotifPanel && (
+          <div
+            onClick={() => setShowNotifPanel(false)}
+            style={{
+              position: 'fixed', inset: 0,
+              zIndex: 199,
+            }}
+          />
+        )}
 
         {/* Usuario + logout */}
         <div className={styles.bottomUserBar}>

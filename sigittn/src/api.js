@@ -123,6 +123,7 @@ export const mensajes = {
     return request(`/tickets/${ticketId}/mensajes/${idMensaje}/leido`, { method: 'PATCH' })
   },
 }
+
 // RESET DE CONTRASEÑA (públicos — no requieren token)
 export const resetPassword = {
   solicitar(nombre_usuario, email) {
@@ -139,5 +140,12 @@ export const resetPassword = {
       method: 'POST',
       body: JSON.stringify({ token, nueva_password }),
     })
+  },
+}
+
+// PUSH NOTIFICATIONS (helpers opcionales — la lógica principal está en notifications.js)
+export const push = {
+  getVapidPublicKey() {
+    return fetch(`${BASE}/push/vapid-public-key`).then(r => r.json())
   },
 }

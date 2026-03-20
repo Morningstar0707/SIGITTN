@@ -7,38 +7,22 @@ export default defineConfig({
     react(),
 
     VitePWA({
-      // Actualiza el SW en segundo plano sin interrumpir al usuario
-      registerType: 'autoUpdate',
+      // ── Usar sw.js personalizado con handler de push ──────────────
+      strategies:   'injectManifest',
+      srcDir:       'src',
+      filename:     'sw.js',
+      // ─────────────────────────────────────────────────────────────
 
-      // Inyectar el script de registro automáticamente en index.html
+      registerType: 'autoUpdate',
       injectRegister: 'auto',
 
-      // Archivos que el SW pre-cachea en el build
       includeAssets: ['favicon.svg', 'icons/icon-192.png', 'icons/icon-512.png'],
 
-      workbox: {
-        // Pre-cachear todo el bundle generado por Vite
+      // Configuración para injectManifest (equivale al workbox anterior)
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,woff2}'],
-
-        // Estrategia para llamadas a la API del backend
-        runtimeCaching: [
-          {
-            urlPattern: /\/api\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 5 }, // 5 min
-              networkTimeoutSeconds: 10,
-            },
-          },
-        ],
-
-        // Evitar errores de navegación offline
-        navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/api/],
       },
 
-      // Web App Manifest — define cómo se ve la app al instalarla
       manifest: {
         name: 'SIGITTN — Terminal de Neiva',
         short_name: 'SIGITTN',
@@ -65,7 +49,6 @@ export default defineConfig({
         ],
       },
 
-      // Activa el SW también en desarrollo (para probar)
       devOptions: {
         enabled: true,
         type: 'module',

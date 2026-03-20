@@ -1,8 +1,8 @@
 import pool from '../config/db.js'
+import { notificarUsuarios, getAdminIds } from '../utils/sendPush.js'
 
 /**
  * Verifica si el usuario tiene acceso al chat de un ticket.
- * Solo pueden acceder: el creador, el asignado, o un admin.
  */
 async function verificarAcceso(idTicket, usuario) {
   if (usuario.nombre_rol === 'admin') return true
@@ -57,6 +57,12 @@ export async function listarMensajes(req, res) {
 
 /**
  * POST /api/tickets/:id/mensajes
+ *
+ * 🔔 Push (según rol):
+ *   - Admins: todos los admins activos excepto el remitente.
+ *   - Usuario creador del ticket: si no es el remitente.
+ *   - Usuario asignado al ticket: si no es el remitente.
+ *   (sin duplicados)
  */
 export async function crearMensaje(req, res) {
   const { id } = req.params
@@ -74,8 +80,11 @@ export async function crearMensaje(req, res) {
       return res.status(403).json({ error: 'No tienes acceso a este chat' })
     }
 
+    // Obtener info del ticket para armar destinatarios
     const { rows: ticketRows } = await pool.query(
-      'SELECT id_ticket FROM Tickets WHERE id_ticket = $1', [id]
+      `SELECT t.id_ticket, t.titulo_ticket, t.id_usuario_creador, t.id_usuario_asignado
+       FROM Tickets t WHERE t.id_ticket = $1`,
+      [id]
     )
     if (!ticketRows[0]) return res.status(404).json({ error: 'Ticket no encontrado' })
 
@@ -86,12 +95,54 @@ export async function crearMensaje(req, res) {
       [texto_mensaje || null, url_imagen_mensaje || null, id, req.usuario.id_usuario]
     )
 
-    return res.status(201).json({
-      mensaje: {
-        ...rows[0],
-        nombre_usuario: req.usuario.nombre_usuario,
+    const mensajeCreado = {
+      ...rows[0],
+      nombre_usuario: req.usuario.nombre_usuario,
+    }
+
+    // ── Notificaciones push (no bloquean la respuesta) ───────────────────
+    setTimeout(async () => {
+      try {
+        const ticket         = ticketRows[0]
+        const remitenteId    = req.usuario.id_usuario
+        const remitenteNombre = req.usuario.nombre_usuario
+        const adminIds       = await getAdminIds()
+
+        // Construir conjunto de destinatarios sin duplicados y sin el remitente
+        const destinatariosSet = new Set()
+
+        // Todos los admins activos
+        adminIds.forEach(aid => destinatariosSet.add(aid))
+
+        // Creador del ticket (puede no ser admin)
+        if (ticket.id_usuario_creador) destinatariosSet.add(ticket.id_usuario_creador)
+
+        // Asignado del ticket
+        if (ticket.id_usuario_asignado) destinatariosSet.add(ticket.id_usuario_asignado)
+
+        // Excluir al remitente (no se notifica a sí mismo)
+        destinatariosSet.delete(remitenteId)
+
+        const destinatarios = [...destinatariosSet]
+        if (!destinatarios.length) return
+
+        const preview = texto_mensaje
+          ? (texto_mensaje.length > 60 ? texto_mensaje.substring(0, 60) + '…' : texto_mensaje)
+          : '📷 Imagen adjunta'
+
+        await notificarUsuarios(destinatarios, {
+          title: `💬 Novedad en ticket #${ticket.id_ticket}`,
+          body:  `${remitenteNombre}: ${preview}`,
+          url:   '/',
+          tag:   `mensaje-ticket-${id}`,
+        })
+      } catch (err) {
+        console.error('Error en notificación push (crearMensaje):', err.message)
       }
-    })
+    }, 0)
+    // ────────────────────────────────────────────────────────────────────
+
+    return res.status(201).json({ mensaje: mensajeCreado })
   } catch (err) {
     console.error('Error al crear mensaje:', err)
     return res.status(500).json({ error: 'Error interno del servidor' })
@@ -120,15 +171,6 @@ export async function marcarLeido(req, res) {
 
 /**
  * GET /api/mensajes/no-leidos
- *
- * Devuelve los id_ticket que tienen mensajes nuevos para el usuario actual,
- * comparando la fecha del último mensaje (no propio) contra su último visto
- * en ticket_ultimo_visto.
- *
- * Lógica: un ticket tiene mensajes no leídos si existe al menos un mensaje
- * de OTRO usuario cuya fecha_mensaje > mi visto_en (o si nunca lo he visto).
- *
- * Cada usuario tiene su propio registro → dos admins no se interfieren.
  */
 export async function noLeidos(req, res) {
   const { id_usuario, nombre_rol } = req.usuario
@@ -136,7 +178,6 @@ export async function noLeidos(req, res) {
     let query
 
     if (nombre_rol === 'admin') {
-      // Admin: comprueba TODOS los tickets accesibles
       query = await pool.query(
         `SELECT DISTINCT m.id_ticket
          FROM Mensaje_tickets m
@@ -147,7 +188,6 @@ export async function noLeidos(req, res) {
         [id_usuario]
       )
     } else {
-      // Usuario normal: solo sus tickets (creador o asignado)
       query = await pool.query(
         `SELECT DISTINCT m.id_ticket
          FROM Mensaje_tickets m
@@ -170,10 +210,6 @@ export async function noLeidos(req, res) {
 
 /**
  * PATCH /api/tickets/:id/mensajes/leidos
- *
- * Registra que el usuario actual ya vio el chat de este ticket (NOW()).
- * Usa UPSERT para actualizar si ya existe el registro.
- * NO toca el campo leido_mensaje de otros usuarios → cada uno tiene su estado.
  */
 export async function marcarTodosLeidos(req, res) {
   const { id } = req.params
