@@ -49,7 +49,11 @@ const NAV_ITEMS = [
 export default function DashboardLayout({ session, onLogout }) {
   const isAdmin    = session.nombre_rol === 'admin'
   const visibleNav = NAV_ITEMS.filter(item => !item.adminOnly || isAdmin)
-  const [activeNav, setActiveNav] = useState(isAdmin ? 'usuarios' : 'tickets')
+  const [activeNav, setActiveNav] = useState(() => {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('section') === 'tickets') return 'tickets'
+  return isAdmin ? 'usuarios' : 'tickets'
+  })
   const [showNotifPanel, setShowNotifPanel] = useState(false)
 
   return (
