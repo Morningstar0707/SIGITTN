@@ -133,7 +133,7 @@ export async function crearMensaje(req, res) {
         await notificarUsuarios(destinatarios, {
           title: `💬 Novedad en ticket #${ticket.id_ticket}`,
           body:  `${remitenteNombre}: ${preview}`,
-          url:   '/',
+          url:   '/?section=tickets',
           tag:   `mensaje-ticket-${id}`,
         })
       } catch (err) {

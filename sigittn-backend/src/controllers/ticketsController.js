@@ -163,7 +163,7 @@ export async function crearTicket(req, res) {
           await notificarUsuarios(adminsANotificar, {
             title: '🎫 Nuevo ticket creado',
             body:  `"${titulo_ticket}" — por ${creadorNombre}`,
-            url:   '/',
+            url:   '/?section=tickets',
             tag:   `ticket-nuevo-${ticket.id_ticket}`,
           })
         }
@@ -173,7 +173,7 @@ export async function crearTicket(req, res) {
           await notificarUsuarios([asignado], {
             title: '📋 Te asignaron un ticket',
             body:  `"${titulo_ticket}" fue asignado a ti`,
-            url:   '/',
+            url:   '/?section=tickets',
             tag:   `ticket-asignado-${ticket.id_ticket}`,
           })
         }
@@ -258,7 +258,7 @@ export async function actualizarTicket(req, res) {
           await notificarUsuarios([nuevoAsignado], {
             title: '📋 Te asignaron un ticket',
             body:  `"${ticket.titulo_ticket}" fue asignado a ti`,
-            url:   '/',
+            url:   '/?section=tickets',
             tag:   `ticket-asignado-${id}`,
           })
         } catch (err) {
