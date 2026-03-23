@@ -36,6 +36,7 @@ self.addEventListener('push', event => {
     renotify: true,
     // Vibración en móvil: patrón corto-pausa-largo
     vibrate: [100, 50, 200],
+    requireInteraction: true,
   }
 
   event.waitUntil(
