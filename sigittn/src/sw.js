@@ -30,7 +30,7 @@ self.addEventListener('push', event => {
   const options = {
     body:    payload.body  || '',
     icon:    '/icons/icon-192.png',
-    badge:   '/icons/icon-192.png',
+    badge: '/icons/badge-96.png',
     data:    { url: payload.url || '/' },
     tag:     payload.tag || 'sigittn-notif',
     renotify: true,
