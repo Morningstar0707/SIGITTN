@@ -120,7 +120,7 @@ export default function RestablecerPassword({ token, onVolver }) {
           <div className={styles.formContainer}>
 
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
-              <img src={logoImg} alt="SIGITTN" style={{ width: 120, height: 'auto' }} />
+              <img src={logoImg} alt="SIGITTN" style={{ width: 120, height: 'auto', borderRadius: 16 }} />
             </div>
 
             {!exito ? (
