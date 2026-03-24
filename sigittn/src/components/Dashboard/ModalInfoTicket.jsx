@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import styles from './TicketModal.module.css'
 
 const CloseIcon = () => (
@@ -15,6 +17,24 @@ function fmt(iso) {
 }
 
 export default function ModalInfoTicket({ ticket, onClose }) {
+  // Bloquear scroll del fondo en móvil y fijar posición
+  useEffect(() => {
+    const scrollY = window.scrollY
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.left = '0'
+    document.body.style.right = '0'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.right = ''
+      document.body.style.overflow = ''
+      window.scrollTo(0, scrollY)
+    }
+  }, [])
+
   const rows = [
     { label: 'Título',              value: ticket.titulo_ticket },
     { label: 'Estado',              value: ticket.nombre_estado },
@@ -27,7 +47,7 @@ export default function ModalInfoTicket({ ticket, onClose }) {
     { label: 'Fecha de cierre',     value: fmt(ticket.fecha_cierre_ticket) },
   ]
 
-  return (
+  return createPortal(
     <div className={styles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
       <div className={`${styles.modal} ${styles.modalSm}`}>
         <div className={styles.modalHeader}>
@@ -45,6 +65,7 @@ export default function ModalInfoTicket({ ticket, onClose }) {
           ))}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

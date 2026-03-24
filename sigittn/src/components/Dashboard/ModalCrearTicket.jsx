@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import styles from './TicketModal.module.css'
 import ModuloSelect from './ModuloSelect'
 import UsuarioSelect from './UsuarioSelect'
@@ -24,6 +25,24 @@ export default function ModalCrearTicket({ catalogos, onClose, onCreate }) {
   const [id_responsable,    setIdResponsable] = useState('')
   const [errors,            setErrors]        = useState({})
   const [loading,           setLoading]       = useState(false)
+
+  // Bloquear scroll del fondo en móvil y fijar posición
+  useEffect(() => {
+    const scrollY = window.scrollY
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.left = '0'
+    document.body.style.right = '0'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.right = ''
+      document.body.style.overflow = ''
+      window.scrollTo(0, scrollY)
+    }
+  }, [])
 
   // Filtrar usuarios por dependencia seleccionada
   const usuariosFiltrados = id_dependencia
@@ -89,7 +108,7 @@ export default function ModalCrearTicket({ catalogos, onClose, onCreate }) {
     }
   }
 
-  return (
+  return createPortal(
     <div className={styles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
       <div className={styles.modal}>
         <div className={styles.modalHeader}>
@@ -204,6 +223,7 @@ export default function ModalCrearTicket({ catalogos, onClose, onCreate }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

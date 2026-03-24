@@ -47,4 +47,8 @@ export default defineConfig({
       },
     }),
   ],
+  preview: {
+    host: true,
+    allowedHosts: ['sigrid-catalectic-trappedly.ngrok-free.dev'],
+  },
 })
