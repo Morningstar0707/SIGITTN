@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import styles from './TicketModal.module.css'
 import { mensajes as mensajesAPI, notificaciones as notifAPI } from '../../api'
 
@@ -75,6 +76,24 @@ export default function ModalNovedades({ ticket, session, onClose }) {
   const alFondoRef     = useRef(true)
 
   const esMobil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+
+  // Bloquear scroll del fondo en móvil y fijar posición
+  useEffect(() => {
+    const scrollY = window.scrollY
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.left = '0'
+    document.body.style.right = '0'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.right = ''
+      document.body.style.overflow = ''
+      window.scrollTo(0, scrollY)
+    }
+  }, [])
 
   const miId       = session?.id_usuario
   const esAdmin    = session?.nombre_rol === 'admin'
@@ -226,7 +245,7 @@ export default function ModalNovedades({ ticket, session, onClose }) {
   }
 
 
-  return (
+  return createPortal(
     <>
       {/* Lightbox */}
       {imagenExpandida && (
@@ -285,7 +304,7 @@ export default function ModalNovedades({ ticket, session, onClose }) {
         </div>
       )}
 
-      <div className={styles.overlay} style={{ alignItems: 'flex-start', background: 'transparent', backdropFilter: 'none' }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className={styles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
         <div style={{
           background: '#ffffff',
           borderRadius: 16,
@@ -293,7 +312,6 @@ export default function ModalNovedades({ ticket, session, onClose }) {
           maxWidth: 900,
           height: '80vh',
           maxHeight: '80vh',
-          marginTop: '3vh',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -574,6 +592,7 @@ export default function ModalNovedades({ ticket, session, onClose }) {
           )}
         </div>
       </div>
-    </>
+    </>,
+    document.body
   )
 }
