@@ -352,52 +352,52 @@ export default function GestionTickets({ session }) {
 
       {/* ── CONTADORES fixed (desktop) ── */}
       <div className={styles.contadoresWrap}>
-        <div className={styles.contadorCard} style={{ border: '1px solid rgba(30,111,197,0.28)' }}>
-          <div className={styles.contadorIcono} style={{ background: 'rgba(30,111,197,0.1)' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1e6fc5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <div className={styles.contadorCard} style={{ border: '1px solid rgba(6,182,212,0.28)' }}>
+          <div className={styles.contadorIcono} style={{ background: 'rgba(6,182,212,0.1)' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
             </svg>
           </div>
           <div className={styles.contadorTexto}>
-            <p className={styles.contadorLabel} style={{ color: '#5a7a9a' }}>Mis tickets activos</p>
-            <p className={styles.contadorNum} style={{ color: '#1e6fc5' }}>{contadores.creados}</p>
+            <p className={styles.contadorLabel} style={{ color: '#0891B2' }}>Mis tickets activos</p>
+            <p className={styles.contadorNum} style={{ color: '#06B6D4' }}>{contadores.creados}</p>
           </div>
         </div>
-        <div className={styles.contadorCard} style={{ border: '1px solid rgba(124,58,237,0.28)' }}>
-          <div className={styles.contadorIcono} style={{ background: 'rgba(124,58,237,0.1)' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <div className={styles.contadorCard} style={{ border: '1px solid rgba(236,72,153,0.28)' }}>
+          <div className={styles.contadorIcono} style={{ background: 'rgba(236,72,153,0.1)' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#EC4899" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
             </svg>
           </div>
           <div className={styles.contadorTexto}>
-            <p className={styles.contadorLabel} style={{ color: '#6a4a9a' }}>Asignados a mí activos</p>
-            <p className={styles.contadorNum} style={{ color: '#7c3aed' }}>{contadores.asignados}</p>
+            <p className={styles.contadorLabel} style={{ color: '#DB2777' }}>Asignados a mí activos</p>
+            <p className={styles.contadorNum} style={{ color: '#EC4899' }}>{contadores.asignados}</p>
           </div>
         </div>
       </div>
 
       {/* ── CONTADORES inline (móvil) ── */}
       <div className={styles.contadoresInline}>
-        <div className={styles.contadorCard} style={{ border: '1px solid rgba(30,111,197,0.28)' }}>
-          <div className={styles.contadorIcono} style={{ background: 'rgba(30,111,197,0.1)' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1e6fc5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <div className={styles.contadorCard} style={{ border: '1px solid rgba(6,182,212,0.28)' }}>
+          <div className={styles.contadorIcono} style={{ background: 'rgba(6,182,212,0.1)' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
             </svg>
           </div>
           <div className={styles.contadorTexto}>
-            <p className={styles.contadorLabel} style={{ color: '#5a7a9a' }}>Mis tickets activos</p>
-            <p className={styles.contadorNum} style={{ color: '#1e6fc5' }}>{contadores.creados}</p>
+            <p className={styles.contadorLabel} style={{ color: '#0891B2' }}>Mis tickets activos</p>
+            <p className={styles.contadorNum} style={{ color: '#06B6D4' }}>{contadores.creados}</p>
           </div>
         </div>
-        <div className={styles.contadorCard} style={{ border: '1px solid rgba(124,58,237,0.28)' }}>
-          <div className={styles.contadorIcono} style={{ background: 'rgba(124,58,237,0.1)' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <div className={styles.contadorCard} style={{ border: '1px solid rgba(236,72,153,0.28)' }}>
+          <div className={styles.contadorIcono} style={{ background: 'rgba(236,72,153,0.1)' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#EC4899" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
             </svg>
           </div>
           <div className={styles.contadorTexto}>
-            <p className={styles.contadorLabel} style={{ color: '#6a4a9a' }}>Asignados a mí activos</p>
-            <p className={styles.contadorNum} style={{ color: '#7c3aed' }}>{contadores.asignados}</p>
+            <p className={styles.contadorLabel} style={{ color: '#DB2777' }}>Asignados a mí activos</p>
+            <p className={styles.contadorNum} style={{ color: '#EC4899' }}>{contadores.asignados}</p>
           </div>
         </div>
       </div>
@@ -522,12 +522,12 @@ export default function GestionTickets({ session }) {
               <div className={styles.filterPills}>
                 <button className={`${styles.miPill} ${miTicketsFilter ? styles.miPillActive : ''}`}
                   onClick={toggleMiTickets}>
-                  <span className={`${styles.pillCheck} ${miTicketsFilter ? styles.pillCheckActive : ''}`} />
+                  <span className={`${styles.pillCheck} ${miTicketsFilter ? styles.miPillCheckActive : ''}`} />
                   Mis tickets
                 </button>
                 <button className={`${styles.asignadoPill} ${asignadosFilter ? styles.asignadoPillActive : ''}`}
                   onClick={toggleAsignados}>
-                  <span className={`${styles.pillCheck} ${asignadosFilter ? styles.pillCheckActive : ''}`} />
+                  <span className={`${styles.pillCheck} ${asignadosFilter ? styles.asignadoPillCheckActive : ''}`} />
                   Asignados a mí
                 </button>
               </div>
@@ -677,10 +677,10 @@ export default function GestionTickets({ session }) {
                   <span className={styles.ticketNum}>Ticket #{String(ticket.id_ticket).padStart(3, '0')}</span>
                   {esMio      && <span className={styles.miTicketBadge}>Mi ticket</span>}
                   {esAsignado && <span className={styles.asignadoBadge}>Asignado a mí</span>}
-                  <span className={styles.urgencyText}>
-                    Nivel de urgencia: <strong>{ticket.nombre_nivel_urgencia}</strong>
-                  </span>
                 </div>
+                <span className={styles.urgencyText}>
+                  Nivel de urgencia: <strong>{ticket.nombre_nivel_urgencia}</strong>
+                </span>
                 <div className={styles.cardMidRow}>
                   <span className={styles.cardTitle}>{ticket.titulo_ticket}</span>
                   <StatusBadge status={ticket.nombre_estado} />
