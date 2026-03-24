@@ -466,8 +466,8 @@
   .modal {
     border-radius: 20px 20px 0 0;
     max-width: 100%;
-    max-height: 92vh;
-    max-height: 92dvh;
+    max-height: 97vh;
+    max-height: 97dvh;
     /* Animación desde abajo en móvil */
     animation: modalInMobile 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
   }

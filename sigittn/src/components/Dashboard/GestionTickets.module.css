@@ -248,6 +248,18 @@
   border-color: #1e6fc5;
 }
 
+/* Checkbox cian para "Mis tickets" */
+.miPillCheckActive {
+  background: #06B6D4;
+  border-color: #06B6D4;
+}
+
+/* Checkbox rosa para "Asignados a mí" */
+.asignadoPillCheckActive {
+  background: #EC4899;
+  border-color: #EC4899;
+}
+
 /* Status pills */
 .statusPill {
   display: flex;
@@ -277,7 +289,7 @@
   flex-shrink: 0;
 }
 
-/* Pill "Mis tickets" */
+/* Pill "Mis tickets" — Cian */
 .miPill {
   display: flex;
   align-items: center;
@@ -285,22 +297,22 @@
   padding: 6px 12px;
   min-height: 34px;
   background: transparent;
-  border: 1px solid rgba(30,111,197,0.4);
+  border: 1px solid rgba(6,182,212,0.4);
   border-radius: 10px;
-  color: #1e6fc5;
+  color: #06B6D4;
   font-family: 'DM Sans', sans-serif;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.miPill:hover { background: rgba(30,111,197,0.07); }
+.miPill:hover { background: rgba(6,182,212,0.07); }
 .miPillActive {
-  background: rgba(30,111,197,0.12);
-  border-color: rgba(30,111,197,0.5);
+  background: rgba(6,182,212,0.12);
+  border-color: rgba(6,182,212,0.5);
 }
 
-/* Pill "Asignados a mí" */
+/* Pill "Asignados a mí" — Rosa */
 .asignadoPill {
   display: flex;
   align-items: center;
@@ -308,19 +320,19 @@
   padding: 6px 12px;
   min-height: 34px;
   background: transparent;
-  border: 1px solid rgba(124,58,237,0.4);
+  border: 1px solid rgba(236,72,153,0.4);
   border-radius: 10px;
-  color: #7c3aed;
+  color: #EC4899;
   font-family: 'DM Sans', sans-serif;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.asignadoPill:hover { background: rgba(124,58,237,0.07); }
+.asignadoPill:hover { background: rgba(236,72,153,0.07); }
 .asignadoPillActive {
-  background: rgba(124,58,237,0.12);
-  border-color: rgba(124,58,237,0.5);
+  background: rgba(236,72,153,0.12);
+  border-color: rgba(236,72,153,0.5);
 }
 
 /* ===== PAGE INDICATOR ===== */
@@ -369,36 +381,34 @@
   background: #e6e6e6;
 }
 
-/* Chip "Mi ticket" */
+/* Chip "Mi ticket" — Cian */
 .miTicketBadge {
   font-family: 'DM Sans', sans-serif;
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.3px;
-  color: #1e6fc5;
-  background: rgba(30,111,197,0.12);
-  border: 1px solid rgba(30,111,197,0.3);
+  color: #06B6D4;
+  background: rgba(6,182,212,0.12);
+  border: 1px solid rgba(6,182,212,0.3);
   border-radius: 20px;
   padding: 1px 7px;
   white-space: nowrap;
   flex-shrink: 0;
-  text-transform: uppercase;
 }
 
-/* Chip "Asignado a mí" */
+/* Chip "Asignado a mí" — Rosa */
 .asignadoBadge {
   font-family: 'DM Sans', sans-serif;
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.3px;
-  color: #7c3aed;
-  background: rgba(124,58,237,0.12);
-  border: 1px solid rgba(124,58,237,0.3);
+  color: #EC4899;
+  background: rgba(236,72,153,0.12);
+  border: 1px solid rgba(236,72,153,0.3);
   border-radius: 20px;
   padding: 1px 7px;
   white-space: nowrap;
   flex-shrink: 0;
-  text-transform: uppercase;
 }
 
 .cardMain {
