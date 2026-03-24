@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import styles from './Modal.module.css'
 import { catalogos as catalogosAPI } from '../../api'
 
@@ -18,6 +19,24 @@ export default function ModalEditarUsuario({ user, onClose, onSave }) {
 
   useEffect(() => {
     catalogosAPI.obtener().then(data => setCats(data)).catch(() => {})
+  }, [])
+
+  // Bloquear scroll del fondo en móvil y fijar posición
+  useEffect(() => {
+    const scrollY = window.scrollY
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.left = '0'
+    document.body.style.right = '0'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.right = ''
+      document.body.style.overflow = ''
+      window.scrollTo(0, scrollY)
+    }
   }, [])
 
   const validate = () => {
@@ -42,7 +61,7 @@ export default function ModalEditarUsuario({ user, onClose, onSave }) {
     }
   }
 
-  return (
+  return createPortal(
     <div className={styles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
       <div className={styles.modal}>
         <div className={styles.modalHeader}>
@@ -97,6 +116,7 @@ export default function ModalEditarUsuario({ user, onClose, onSave }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

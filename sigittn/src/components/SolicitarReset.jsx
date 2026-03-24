@@ -54,7 +54,7 @@ export default function SolicitarReset({ onVolver }) {
           <div className={styles.formContainer}>
 
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
-              <img src={logoImg} alt="SIGITTN" style={{ width: 120, height: 'auto' }} />
+              <img src={logoImg} alt="SIGITTN" style={{ width: 120, height: 'auto', borderRadius: 16 }} />
             </div>
 
             {!enviado ? (
@@ -162,7 +162,9 @@ export default function SolicitarReset({ onVolver }) {
       </div>
 
       <p className={styles.footer}>
-        © {new Date().getFullYear()} El Terminal Neiva · SIGITTN v1.0
+        © {new Date().getFullYear()} El Terminal Neiva · SIGITTN v1.0 -{' '}
+        <a href="https://github.com/Morningstar0707/SIGITTN" target="_blank"
+          rel="noopener noreferrer" className={styles.git}>GitHub/Morningstar0707</a>
       </p>
     </div>
   )

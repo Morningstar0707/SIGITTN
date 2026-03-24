@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import styles from './TicketModal.module.css'
-import { mensajes as mensajesAPI } from '../../api'
+import { mensajes as mensajesAPI, notificaciones as notifAPI } from '../../api'
 
 const CloseIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -24,6 +25,19 @@ const VideoIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polygon points="23 7 16 12 23 17 23 7"/>
     <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+  </svg>
+)
+const CameraIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+    <circle cx="12" cy="13" r="4"/>
+  </svg>
+)
+const VideoRecordIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="23 7 16 12 23 17 23 7"/>
+    <rect x="1" y="5" width="15" height="14" rx="2"/>
+    <circle cx="5.5" cy="9.5" r="1.5" fill="currentColor" stroke="none"/>
   </svg>
 )
 const DownloadIcon = () => (
@@ -54,9 +68,32 @@ export default function ModalNovedades({ ticket, session, onClose }) {
   const [cargando,        setCargando]        = useState(true)
   const [sinAcceso,       setSinAcceso]       = useState(false)
   const [imagenExpandida, setImagenExpandida] = useState(null)
-  const messagesRef = useRef(null)
-  const fileRef     = useRef(null)
-  const videoRef    = useRef(null)
+
+  const messagesRef    = useRef(null)
+  const fileRef        = useRef(null)
+  const cameraRef      = useRef(null)
+  const videoRecordRef = useRef(null)
+  const alFondoRef     = useRef(true)
+
+  const esMobil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+
+  // Bloquear scroll del fondo en móvil y fijar posición
+  useEffect(() => {
+    const scrollY = window.scrollY
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.left = '0'
+    document.body.style.right = '0'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.right = ''
+      document.body.style.overflow = ''
+      window.scrollTo(0, scrollY)
+    }
+  }, [])
 
   const miId       = session?.id_usuario
   const esAdmin    = session?.nombre_rol === 'admin'
@@ -65,6 +102,7 @@ export default function ModalNovedades({ ticket, session, onClose }) {
   const puedeMensajear = esAdmin || esCreador || esAsignado
   const esCerrado      = ticket.nombre_estado === 'Cerrado'
 
+  // ── Carga inicial ────────────────────────────────────────────
   useEffect(() => {
     if (!puedeMensajear) {
       setCargando(false)
@@ -81,11 +119,43 @@ export default function ModalNovedades({ ticket, session, onClose }) {
       .finally(() => setCargando(false))
   }, [ticket.id_ticket])
 
+  // ── Polling silencioso cada 5 segundos ───────────────────────
+  const fetchMensajesSilencioso = useCallback(() => {
+    if (!puedeMensajear || sinAcceso) return
+    mensajesAPI.listar(ticket.id_ticket)
+      .then(data => {
+        setMensajes(prev => {
+          // Solo actualiza si hay mensajes nuevos
+          if (data.mensajes.length === prev.length) return prev
+          return data.mensajes
+        })
+        // Marcar como leídos automáticamente mientras el chat está abierto
+        notifAPI.marcarTodosLeidos(ticket.id_ticket).catch(() => {})
+      })
+      .catch(() => {})
+  }, [ticket.id_ticket, puedeMensajear, sinAcceso])
+
   useEffect(() => {
-    if (messagesRef.current) {
+    if (sinAcceso || cargando) return
+    const interval = setInterval(fetchMensajesSilencioso, 5000)
+    return () => clearInterval(interval)
+  }, [fetchMensajesSilencioso, sinAcceso, cargando])
+  // ─────────────────────────────────────────────────────────────
+
+  // ── Scroll automático solo si el usuario está al fondo ───────
+  const handleScroll = () => {
+    const el = messagesRef.current
+    if (!el) return
+    const distanciaAlFondo = el.scrollHeight - el.scrollTop - el.clientHeight
+    alFondoRef.current = distanciaAlFondo < 60
+  }
+
+  useEffect(() => {
+    if (alFondoRef.current && messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight
     }
   }, [mensajes])
+  // ─────────────────────────────────────────────────────────────
 
   const handleDescargar = (url) => {
     const a = document.createElement('a')
@@ -102,6 +172,8 @@ export default function ModalNovedades({ ticket, session, onClose }) {
     try {
       const data = await mensajesAPI.enviarTexto(ticket.id_ticket, texto)
       setMensajes(prev => [...prev, data.mensaje])
+      // Forzar scroll al fondo al enviar mensaje propio
+      alFondoRef.current = true
     } catch (err) {
       alert(err.message)
     }
@@ -116,6 +188,7 @@ export default function ModalNovedades({ ticket, session, onClose }) {
       try {
         const data = await mensajesAPI.enviarImagen(ticket.id_ticket, base64)
         setMensajes(prev => [...prev, { ...data.mensaje, url_imagen_mensaje: base64 }])
+        alFondoRef.current = true
       } catch (err) {
         alert(err.message)
       }
@@ -129,15 +202,40 @@ export default function ModalNovedades({ ticket, session, onClose }) {
   }
 
   const handleImage = async (e) => {
+    const files = Array.from(e.target.files)
+    if (!files.length) return
+
+    for (const file of files) {
+      await new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onload = async () => {
+          const base64 = reader.result
+          try {
+            const data = await mensajesAPI.enviarImagen(ticket.id_ticket, base64)
+            setMensajes(prev => [...prev, { ...data.mensaje, url_imagen_mensaje: base64 }])
+            alFondoRef.current = true
+          } catch (err) {
+            alert(err.message)
+          }
+          resolve()
+        }
+        reader.readAsDataURL(file)
+      })
+    }
+    e.target.value = ''
+  }
+
+  // Cámara — toma foto o graba video directamente desde el celular
+  const handleCamera = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-    // Convertir a base64 para que la imagen persista entre sesiones
     const reader = new FileReader()
     reader.onload = async () => {
-      const base64 = reader.result // data:image/...;base64,...
+      const base64 = reader.result
       try {
         const data = await mensajesAPI.enviarImagen(ticket.id_ticket, base64)
         setMensajes(prev => [...prev, { ...data.mensaje, url_imagen_mensaje: base64 }])
+        alFondoRef.current = true
       } catch (err) {
         alert(err.message)
       }
@@ -146,7 +244,8 @@ export default function ModalNovedades({ ticket, session, onClose }) {
     e.target.value = ''
   }
 
-  return (
+
+  return createPortal(
     <>
       {/* Lightbox */}
       {imagenExpandida && (
@@ -159,7 +258,6 @@ export default function ModalNovedades({ ticket, session, onClose }) {
             padding: '24px 32px',
           }}
         >
-          {/* Imagen + botón X juntos en un contenedor relativo */}
           <div
             onClick={e => e.stopPropagation()}
             style={{ position: 'relative' }}
@@ -178,9 +276,7 @@ export default function ModalNovedades({ ticket, session, onClose }) {
                 display: 'block',
               }}
             />
-
           </div>
-          {/* Botones */}
           <div style={{ display: 'flex', gap: 12 }} onClick={e => e.stopPropagation()}>
             <button
               onClick={() => handleDescargar(imagenExpandida)}
@@ -208,7 +304,7 @@ export default function ModalNovedades({ ticket, session, onClose }) {
         </div>
       )}
 
-      <div className={styles.overlay} style={{ alignItems: 'flex-start', background: 'transparent', backdropFilter: 'none' }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className={styles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
         <div style={{
           background: '#ffffff',
           borderRadius: 16,
@@ -216,7 +312,6 @@ export default function ModalNovedades({ ticket, session, onClose }) {
           maxWidth: 900,
           height: '80vh',
           maxHeight: '80vh',
-          marginTop: '3vh',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -224,7 +319,7 @@ export default function ModalNovedades({ ticket, session, onClose }) {
           animation: 'modalIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) both',
         }}>
 
-          {/* Header estilo WhatsApp */}
+          {/* Header */}
           <div style={{
             background: '#0b1526',
             padding: '12px 18px',
@@ -233,7 +328,6 @@ export default function ModalNovedades({ ticket, session, onClose }) {
             flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {/* Avatar del ticket */}
               <div style={{
                 width: 42, height: 42, borderRadius: '50%',
                 background: '#1e3a5a',
@@ -251,6 +345,7 @@ export default function ModalNovedades({ ticket, session, onClose }) {
                   <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>
                     {ticket.nombre_usuario_creador || '—'}
                     {ticket.nombre_usuario_asignado ? ` · ${ticket.nombre_usuario_asignado}` : ''}
+                    {' · '}<span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11 }}>actualiza cada 5s</span>
                   </p>
                 )}
               </div>
@@ -263,7 +358,7 @@ export default function ModalNovedades({ ticket, session, onClose }) {
             </button>
           </div>
 
-          {/* Info bar: Reportado por / Asignado */}
+          {/* Info bar */}
           {!sinAcceso && (
             <div style={{
               background: '#f4f6f9', borderBottom: '1px solid #e8edf5',
@@ -297,7 +392,11 @@ export default function ModalNovedades({ ticket, session, onClose }) {
           ) : (
             <div className={styles.chatSection}>
               {/* Mensajes */}
-              <div className={styles.chatMessages} ref={messagesRef}>
+              <div
+                className={styles.chatMessages}
+                ref={messagesRef}
+                onScroll={handleScroll}
+              >
                 {cargando ? (
                   <p style={{ textAlign: 'center', color: '#8aa0b8', fontSize: 13, marginTop: 20 }}>Cargando...</p>
                 ) : mensajes.length === 0 ? (
@@ -327,7 +426,6 @@ export default function ModalNovedades({ ticket, session, onClose }) {
                           gap: 6,
                         }}>
 
-                        {/* Avatar del otro (solo en primer msg del grupo) */}
                         {!esMio && (
                           <div style={{
                             width: 30, height: 30, borderRadius: '50%',
@@ -340,7 +438,6 @@ export default function ModalNovedades({ ticket, session, onClose }) {
                             {getInitial(nombreRemitente)}
                           </div>
                         )}
-                        {/* Spacer cuando es del mismo remitente */}
                         {!esMio && mismoRemitente && <div style={{ width: 30, flexShrink: 0 }} />}
 
                         <div style={{
@@ -349,7 +446,6 @@ export default function ModalNovedades({ ticket, session, onClose }) {
                           alignItems: esMio ? 'flex-end' : 'flex-start',
                           gap: 2,
                         }}>
-                          {/* Nombre (solo en primer msg del grupo) */}
                           {!esMio && !mismoRemitente && (
                             <span style={{
                               fontSize: 11.5, color: '#1e6fc5', fontWeight: 600,
@@ -360,7 +456,6 @@ export default function ModalNovedades({ ticket, session, onClose }) {
                           )}
 
                           {msg.url_imagen_mensaje ? (
-                            /* Burbuja de imagen o video */
                             <div style={{
                               background: esMio ? '#d1e4f7' : '#ffffff',
                               borderRadius: esMio ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
@@ -369,17 +464,12 @@ export default function ModalNovedades({ ticket, session, onClose }) {
                               overflow: 'hidden',
                             }}>
                               {msg.url_imagen_mensaje.startsWith('data:video') ? (
-                                /* Video */
                                 <video
                                   src={msg.url_imagen_mensaje}
                                   controls
-                                  style={{
-                                    width: 220, maxWidth: '100%', borderRadius: 8,
-                                    display: 'block',
-                                  }}
+                                  style={{ width: 220, maxWidth: '100%', borderRadius: 8, display: 'block' }}
                                 />
                               ) : (
-                                /* Imagen — pantalla completa nativa al hacer clic */
                                 <img
                                   src={msg.url_imagen_mensaje}
                                   alt="evidencia"
@@ -393,17 +483,13 @@ export default function ModalNovedades({ ticket, session, onClose }) {
                                   }}
                                 />
                               )}
-                              <div style={{
-                                display: 'flex', justifyContent: 'flex-end',
-                                padding: '2px 6px 2px',
-                              }}>
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '2px 6px 2px' }}>
                                 <span style={{ fontSize: 10, color: '#8aa0b8', fontFamily: 'DM Sans, sans-serif' }}>
                                   {fmtHora(msg.fecha_mensaje)}
                                 </span>
                               </div>
                             </div>
                           ) : (
-                            /* Burbuja de texto */
                             <div style={{
                               background: esMio ? '#d1e4f7' : '#ffffff',
                               borderRadius: esMio ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
@@ -432,7 +518,6 @@ export default function ModalNovedades({ ticket, session, onClose }) {
                     )
                   })
                 )}
-
               </div>
 
               {/* Input */}
@@ -450,7 +535,7 @@ export default function ModalNovedades({ ticket, session, onClose }) {
                   Ticket cerrado — solo lectura
                 </div>
               ) : (
-                <div className={styles.chatInput}>
+                <div className={styles.chatInput} style={{ position: 'relative' }}>
                   <input
                     type="text"
                     className={styles.chatTextInput}
@@ -465,26 +550,49 @@ export default function ModalNovedades({ ticket, session, onClose }) {
                     </button>
                   ) : (
                     <>
-                      <button className={styles.chatSendBtn} title="Enviar imagen"
+                      {/* Galería — fotos y videos */}
+                      <button className={styles.chatSendBtn} title="Galería"
                         onClick={() => fileRef.current?.click()}>
                         <ImageIcon />
                       </button>
-                      <button className={styles.chatSendBtn} title="Enviar video"
-                        onClick={() => videoRef.current?.click()}>
-                        <VideoIcon />
-                      </button>
+
+                      {/* Cámara — solo móvil */}
+                      {esMobil && (
+                        <>
+                          {/* Tomar foto con cámara */}
+                          <button className={styles.chatSendBtn} title="Tomar foto"
+                            onClick={() => cameraRef.current?.click()}>
+                            <CameraIcon />
+                          </button>
+                          {/* Grabar video con cámara */}
+                          <button className={styles.chatSendBtn} title="Grabar video"
+                            onClick={() => videoRecordRef.current?.click()}
+                            style={{ background: '#dc2626' }}>
+                            <VideoRecordIcon />
+                          </button>
+                        </>
+                      )}
                     </>
                   )}
-                  <input ref={fileRef} type="file" accept="image/*"
+
+                  {/* Galería: fotos y videos múltiples */}
+                  <input ref={fileRef} type="file" accept="image/*,video/*" multiple
                     style={{ display: 'none' }} onChange={handleImage} />
-                  <input ref={videoRef} type="file" accept="video/*"
-                    style={{ display: 'none' }} onChange={handleVideo} />
+
+                  {/* Cámara nativa — foto */}
+                  <input ref={cameraRef} type="file" accept="image/*" capture="environment"
+                    style={{ display: 'none' }} onChange={handleCamera} />
+
+                  {/* Cámara nativa — video */}
+                  <input ref={videoRecordRef} type="file" accept="video/*" capture="environment"
+                    style={{ display: 'none' }} onChange={handleCamera} />
                 </div>
               )}
             </div>
           )}
         </div>
       </div>
-    </>
+    </>,
+    document.body
   )
 }
