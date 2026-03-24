@@ -8,12 +8,6 @@
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
     "db:init": "node src/db/init.js",
-    "db:migrate": "node src/db/migrate_reset_tokens.js",
-    "db:modulos": "node src/db/migrate_modulos.js",
-    "db:dependencias": "node src/db/migrate_dependencias.js",
-    "db:mensajes": "node src/db/migrate_mensajes_usuario.js",
-    "db:ultimo-visto": "node src/db/migrate_ultimo_visto.js",
-    "db:push": "node src/db/migrate_push_subscriptions.js",
     "vapid:generar": "node -e \"import('web-push').then(m => { const k = m.default.generateVAPIDKeys(); console.log('VAPID_PUBLIC_KEY=' + k.publicKey); console.log('VAPID_PRIVATE_KEY=' + k.privateKey); })\""
   },
   "dependencies": {
