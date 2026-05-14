@@ -2,22 +2,47 @@
  * SIGITTN — uploadController.js
  *
  * Recibe un archivo del frontend (multipart/form-data),
- * lo reenvía al NAS y devuelve la URL pública del archivo.
+ * lo guarda en disco y devuelve la URL pública.
  *
  * POST /api/upload
  *   Header: Authorization: Bearer <jwt>
  *   Body:   FormData con campo "file"
  *
- * Variables de entorno requeridas:
- *   NAS_URL           — URL base del NAS (ej: https://nas.tudominio.com)
- *   NAS_UPLOAD_SECRET — clave secreta compartida con el NAS
+ * Variables de entorno:
+ *   STORAGE_ROOT     — ruta local donde guardar archivos
+ *                      (default: /srv/sigittn/archivos)
+ *   FILES_PUBLIC_URL — URL base pública de los archivos
+ *                      (ej: https://mi-tunel.trycloudflare.com/uploads)
  */
 import multer from 'multer'
+import path   from 'path'
+import fs     from 'fs'
+import crypto from 'crypto'
 
-// ── Multer: memoria — el archivo vive solo durante el request ──────
+const STORAGE_ROOT   = process.env.STORAGE_ROOT    || '/srv/sigittn/archivos'
+const FILES_PUBLIC_URL = (process.env.FILES_PUBLIC_URL || 'http://localhost/uploads').replace(/\/$/, '')
+
+// Crear directorios si no existen
+for (const subdir of ['mensajes', 'videos']) {
+  const dir = path.join(STORAGE_ROOT, subdir)
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+}
+
+const storage = multer.diskStorage({
+  destination(_req, file, cb) {
+    const subdir = file.mimetype.startsWith('video/') ? 'videos' : 'mensajes'
+    cb(null, path.join(STORAGE_ROOT, subdir))
+  },
+  filename(_req, file, cb) {
+    const ext  = path.extname(file.originalname).toLowerCase()
+    const name = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`
+    cb(null, name)
+  },
+})
+
 const upload = multer({
-  storage: multer.memoryStorage(),
-  limits:  { fileSize: 50 * 1024 * 1024 },   // 50 MB
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter(_req, file, cb) {
     const permitidos = /\.(jpe?g|png|gif|webp|mp4|webm|mov)$/i
     if (permitidos.test(file.originalname)) return cb(null, true)
@@ -33,42 +58,12 @@ export async function subirArchivo(req, res) {
     return res.status(400).json({ error: 'No se recibió ningún archivo' })
   }
 
-  const nasUrl    = process.env.NAS_URL?.replace(/\/$/, '')
-  const nasSecret = process.env.NAS_UPLOAD_SECRET
-
-  if (!nasUrl || !nasSecret) {
-    return res.status(503).json({
-      error: 'El servidor NAS no está configurado. Contacta al administrador.',
-    })
-  }
-
   try {
-    // Reenviar el archivo al NAS como multipart/form-data
-    const form = new FormData()
-    form.append(
-      'file',
-      new Blob([req.file.buffer], { type: req.file.mimetype }),
-      req.file.originalname,
-    )
-
-    const resp = await fetch(`${nasUrl}/upload`, {
-      method:  'POST',
-      headers: { 'x-upload-secret': nasSecret },
-      body:    form,
-    })
-
-    const data = await resp.json()
-
-    if (!resp.ok) {
-      console.error('NAS respondió con error:', resp.status, data)
-      throw new Error(data.error || `Error del NAS: ${resp.status}`)
-    }
-
-    return res.json({ url: data.url })
+    const subdir = req.file.mimetype.startsWith('video/') ? 'videos' : 'mensajes'
+    const url    = `${FILES_PUBLIC_URL}/${subdir}/${req.file.filename}`
+    return res.json({ url })
   } catch (err) {
-    console.error('Error al comunicarse con el NAS:', err.message)
-    return res.status(502).json({
-      error: 'No se pudo contactar el servidor de almacenamiento. Intenta de nuevo.',
-    })
+    console.error('Error al guardar archivo:', err.message)
+    return res.status(500).json({ error: 'Error interno al guardar el archivo.' })
   }
 }
