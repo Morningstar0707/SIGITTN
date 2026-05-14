@@ -1,0 +1,20 @@
+[Unit]
+Description=SIGITTN NAS — Upload API
+Documentation=https://github.com/tu-usuario/sigittn
+After=network.target
+
+[Service]
+Type=simple
+User=nasuser
+Group=nasuser
+WorkingDirectory=/opt/sigittn-nas
+EnvironmentFile=/opt/sigittn-nas/.env
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sigittn-nas
+
+[Install]
+WantedBy=multi-user.target

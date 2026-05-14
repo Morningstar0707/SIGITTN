@@ -149,3 +149,32 @@ export const push = {
     return fetch(`${BASE}/push/vapid-public-key`).then(r => r.json())
   },
 }
+
+// SUBIDA DE ARCHIVOS AL NAS (vía backend Railway)
+export const archivos = {
+  /**
+   * Sube un archivo al NAS a través del backend.
+   * @param {File} file - objeto File del input[type=file]
+   * @returns {Promise<{ url: string }>}
+   */
+  async subir(file) {
+    const token = getToken()
+    const form  = new FormData()
+    form.append('file', file)
+
+    const res = await fetch(`${BASE}/upload`, {
+      method:  'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body:    form,
+    })
+
+    if (res.status === 401) {
+      removeToken()
+      window.dispatchEvent(new Event('sigittn:logout'))
+    }
+
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+    return data  // { url }
+  },
+}
