@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import styles from './TicketModal.module.css'
-import { mensajes as mensajesAPI, notificaciones as notifAPI } from '../../api'
+import { mensajes as mensajesAPI, notificaciones as notifAPI, archivos } from '../../api'
 
 const CloseIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -182,19 +182,15 @@ export default function ModalNovedades({ ticket, session, onClose }) {
   const handleVideo = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = async () => {
-      const base64 = reader.result
-      try {
-        const data = await mensajesAPI.enviarImagen(ticket.id_ticket, base64)
-        setMensajes(prev => [...prev, { ...data.mensaje, url_imagen_mensaje: base64 }])
-        alFondoRef.current = true
-      } catch (err) {
-        alert(err.message)
-      }
-    }
-    reader.readAsDataURL(file)
     e.target.value = ''
+    try {
+      const { url } = await archivos.subir(file)
+      const data    = await mensajesAPI.enviarImagen(ticket.id_ticket, url)
+      setMensajes(prev => [...prev, data.mensaje])
+      alFondoRef.current = true
+    } catch (err) {
+      alert(err.message)
+    }
   }
 
   const handleKey = (e) => {
@@ -204,44 +200,32 @@ export default function ModalNovedades({ ticket, session, onClose }) {
   const handleImage = async (e) => {
     const files = Array.from(e.target.files)
     if (!files.length) return
-
-    for (const file of files) {
-      await new Promise((resolve) => {
-        const reader = new FileReader()
-        reader.onload = async () => {
-          const base64 = reader.result
-          try {
-            const data = await mensajesAPI.enviarImagen(ticket.id_ticket, base64)
-            setMensajes(prev => [...prev, { ...data.mensaje, url_imagen_mensaje: base64 }])
-            alFondoRef.current = true
-          } catch (err) {
-            alert(err.message)
-          }
-          resolve()
-        }
-        reader.readAsDataURL(file)
-      })
-    }
     e.target.value = ''
+    for (const file of files) {
+      try {
+        const { url } = await archivos.subir(file)
+        const data    = await mensajesAPI.enviarImagen(ticket.id_ticket, url)
+        setMensajes(prev => [...prev, data.mensaje])
+        alFondoRef.current = true
+      } catch (err) {
+        alert(err.message)
+      }
+    }
   }
 
   // Cámara — toma foto o graba video directamente desde el celular
   const handleCamera = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = async () => {
-      const base64 = reader.result
-      try {
-        const data = await mensajesAPI.enviarImagen(ticket.id_ticket, base64)
-        setMensajes(prev => [...prev, { ...data.mensaje, url_imagen_mensaje: base64 }])
-        alFondoRef.current = true
-      } catch (err) {
-        alert(err.message)
-      }
-    }
-    reader.readAsDataURL(file)
     e.target.value = ''
+    try {
+      const { url } = await archivos.subir(file)
+      const data    = await mensajesAPI.enviarImagen(ticket.id_ticket, url)
+      setMensajes(prev => [...prev, data.mensaje])
+      alFondoRef.current = true
+    } catch (err) {
+      alert(err.message)
+    }
   }
 
 

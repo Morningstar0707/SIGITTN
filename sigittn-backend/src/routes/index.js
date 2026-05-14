@@ -6,6 +6,7 @@ import { listarTickets, obtenerTicket, crearTicket, actualizarTicket, cambiarEst
 import { listarMensajes, crearMensaje, marcarLeido, noLeidos, marcarTodosLeidos } from '../controllers/mensajesController.js'
 import { obtenerCatalogos }                                                 from '../controllers/catalogosController.js'
 import { getVapidPublicKey, suscribir, desuscribir }                       from '../controllers/pushController.js'
+import { subirArchivo, uploadMiddleware }                                   from '../controllers/uploadController.js'
 import { verificarToken, soloAdmin }                                        from '../middleware/auth.js'
 
 const router = Router()
@@ -48,5 +49,8 @@ router.patch('/tickets/:id/mensajes/:idMensaje/leido', verificarToken, marcarLei
 router.get('/push/vapid-public-key',  getVapidPublicKey)          // pública — no requiere token
 router.post('/push/suscribir',        verificarToken, suscribir)
 router.post('/push/desuscribir',      verificarToken, desuscribir)
+
+// UPLOAD DE ARCHIVOS AL NAS
+router.post('/upload', verificarToken, uploadMiddleware, subirArchivo)
 
 export default router
